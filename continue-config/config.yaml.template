@@ -1,0 +1,30 @@
+# Continue.dev model configuration template.
+#
+# This is a TEMPLATE, not a live config file. Provision-LabVM.ps1 renders
+# it (simple token substitution) into the machine-wide
+# ~/.continue/config.yaml, replacing {{OLLAMA_CHAT_MODEL}} and
+# {{OLLAMA_AUTOCOMPLETE_MODEL}} with the models chosen by
+# provisioning/lib/ModelDecision.ps1 for this VM's hardware.
+#
+# To change the default model, edit
+# provisioning/config/model-decision-table.psd1 - not this file.
+
+name: Lab VM Assistant
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Lab Assistant (Ollama)
+    provider: ollama
+    model: "{{OLLAMA_CHAT_MODEL}}"
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+
+  - name: Autocomplete (Ollama)
+    provider: ollama
+    model: "{{OLLAMA_AUTOCOMPLETE_MODEL}}"
+    apiBase: http://localhost:11434
+    roles:
+      - autocomplete

@@ -1,0 +1,16 @@
+# OS cruft (Windows)
+Thumbs.db
+desktop.ini
+
+# VS Code local-only overrides (continue-config/ itself is intentionally tracked)
+.vscode/
+
+# AutoCAD lock, autosave, and backup files
+*.dwl
+*.dwl2
+*.bak
+*.sv$
+
+# PowerShell provisioning logs / diagnostics output
+provisioning/logs/
+provisioning/diagnostics/
