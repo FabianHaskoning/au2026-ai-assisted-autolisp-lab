@@ -30,9 +30,13 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 
 $config = Import-PowerShellDataFile -Path (Join-Path $PSScriptRoot 'config\provisioning.config.psd1')
 
-$installed = @()
-$skipped   = @()
-$failed    = @()
+$installed     = @()
+$skipped       = @()
+$failed        = @()
+# Installed successfully, but the running shell's PATH won't see it until a
+# new shell starts - Windows doesn't propagate env var changes to already-
+# running processes. Expected on every VM's first run, not a real failure.
+$needsNewShell = @()
 
 # --- Elevation check ---------------------------------------------------------
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -60,8 +64,9 @@ function Install-ViaWinget {
             $script:installed += $DisplayName
         }
         else {
-            Write-LabLog "${DisplayName}: winget reported success but '$CommandToCheck' still isn't on PATH - a new shell/PATH refresh may be needed." -Level Warn
-            $script:failed += "$DisplayName (installed but not yet on PATH)"
+            Write-LabLog "${DisplayName}: winget reported success but '$CommandToCheck' still isn't on PATH in this shell - expected, will resolve in a new shell." -Level Warn
+            $script:installed += $DisplayName
+            $script:needsNewShell += $DisplayName
         }
     }
     catch {
@@ -156,13 +161,13 @@ else {
     Write-LabLog 'Installing Claude Code CLI...' -Level Info
     try {
         Invoke-Expression (Invoke-RestMethod 'https://claude.ai/install.ps1')
+        $installed += 'Claude Code CLI'
         if (Test-CommandExists 'claude') {
             Write-LabLog 'Claude Code CLI installed.' -Level Success
-            $installed += 'Claude Code CLI'
         }
         else {
-            Write-LabLog "Claude Code CLI installer ran but 'claude' still isn't on PATH - a new shell/PATH refresh may be needed." -Level Warn
-            $failed += 'Claude Code CLI (installed but not yet on PATH)'
+            Write-LabLog "Claude Code CLI installed, but 'claude' isn't on PATH in this shell - expected, will resolve in a new shell." -Level Warn
+            $needsNewShell += 'Claude Code CLI'
         }
     }
     catch {
@@ -292,14 +297,17 @@ else {
 }
 
 # --- Summary --------------------------------------------------------------------
-$status = if ($failed.Count -gt 0) { 'FAIL' } else { 'PASS' }
-$statusColor = if ($status -eq 'FAIL') { 'Red' } else { 'Green' }
+$status = if ($failed.Count -gt 0) { 'FAIL' } elseif ($needsNewShell.Count -gt 0) { 'PASS (new shell needed)' } else { 'PASS' }
+$statusColor = if ($failed.Count -gt 0) { 'Red' } elseif ($needsNewShell.Count -gt 0) { 'Yellow' } else { 'Green' }
 
 Write-Host "`n=== Provision-LabVM Summary: $status ===" -ForegroundColor $statusColor
 Write-Host "Chosen model:  $chatModel (chat/edit), $autocompleteModel (autocomplete)"
 Write-Host "Claude Code CLI (local, optional): $(if ($supportsAgenticCli) { "enabled - run 'claude-local' in a new shell" } else { 'not offered on this VM tier' })"
 Write-Host "Installed:     $($installed -join ', ')"
 Write-Host "Skipped:       $($skipped -join ', ')"
+if ($needsNewShell.Count -gt 0) {
+    Write-Host "Needs new shell to appear on PATH: $($needsNewShell -join ', ')" -ForegroundColor Yellow
+}
 if ($failed.Count -gt 0) {
     Write-Host "Failed:        $($failed -join ', ')" -ForegroundColor Red
 }
