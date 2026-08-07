@@ -223,7 +223,11 @@ try {
         Write-LabLog 'Synced CLAUDE.md (local Claude Code CLI governance) into the workspace.' -Level Success
     }
 
-    $hasCommit = git log -1 2>&1
+    # `git log -1` on a brand-new repo exits non-zero and writes to stderr,
+    # which PowerShell 7.3+ can turn into a terminating error even though
+    # this is an expected, normal outcome here - catch and ignore it, we
+    # only care about $LASTEXITCODE.
+    try { git log -1 2>&1 | Out-Null } catch { }
     if ($LASTEXITCODE -ne 0) {
         git add -A | Out-Null
         git commit -m 'Set up lab workspace (governance rules + scaffold template)' | Out-Null
