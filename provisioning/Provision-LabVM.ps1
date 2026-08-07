@@ -367,13 +367,18 @@ finally {
     Pop-Location
 }
 
-# --- Step 9: install git helpers -----------------------------------------------
-$psModulePath = ($env:PSModulePath -split ';')[0]
-$labModuleDir = Join-Path $psModulePath 'LabGitHelpers'
-New-Item -ItemType Directory -Path $labModuleDir -Force | Out-Null
-Copy-Item -Path (Join-Path $repoRoot 'git-helpers\LabGitHelpers.psm1') -Destination $labModuleDir -Force
-Write-LabLog "Installed LabGitHelpers module to $labModuleDir" -Level Success
-$installed += 'LabGitHelpers module'
+# --- Step 9+10: install git helpers + the local Claude Code CLI helper --------
+# This VM has BOTH Windows PowerShell 5.1 and PowerShell 7+ installed
+# (confirmed live - an attendee could open either one), and they do NOT
+# share module paths or $PROFILE. Installing only into whichever shell
+# happens to run this script would silently break New-Routine/save/undo/
+# claude-local for anyone who opens the other one. Install into both
+# well-known per-user locations explicitly, regardless of which shell is
+# currently running.
+$shellTargets = @(
+    @{ Name = 'Windows PowerShell 5.1'; ModulesDir = Join-Path $HOME 'Documents\WindowsPowerShell\Modules'; ProfilePath = Join-Path $HOME 'Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1' }
+    @{ Name = 'PowerShell 7+';          ModulesDir = Join-Path $HOME 'Documents\PowerShell\Modules';          ProfilePath = Join-Path $HOME 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1' }
+)
 
 try {
     & (Join-Path $repoRoot 'git-helpers\git-aliases.ps1') | Out-Null
@@ -384,25 +389,30 @@ catch {
     $failed += 'Portable git save/undo aliases'
 }
 
-# --- Step 10: install the local Claude Code CLI helper (optional) -------------
-# LAB_AGENT_MODEL_FAST/_QUALITY are static facts about this VM's tier (safe
-# to re-set on every new shell). The CURRENTLY SELECTED model is a mutable
-# choice, not a fact - its source of truth is ~/.claude/settings.json's
-# "model" field (see Set-LabModel in LocalClaude.psm1), which fast-model /
-# quality-model update and which a new shell must NOT silently reset.
-$localClaudeImportLine = ''
-if ($supportsAgenticCli) {
-    $localClaudeModuleDir = Join-Path $psModulePath 'LocalClaude'
-    New-Item -ItemType Directory -Path $localClaudeModuleDir -Force | Out-Null
-    Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\LocalClaude.psm1') -Destination $localClaudeModuleDir -Force
-    Write-LabLog "Installed LocalClaude module to $localClaudeModuleDir" -Level Success
-    $installed += 'LocalClaude module (claude-local, fast-model, quality-model, cloud-mode, local-mode)'
-    $localClaudeImportLine = "`$env:LAB_AGENT_MODEL_FAST = '$chatModel'`n`$env:LAB_AGENT_MODEL_QUALITY = '$qualityModel'`nImport-Module LocalClaude"
-}
+foreach ($target in $shellTargets) {
+    $labModuleDir = Join-Path $target.ModulesDir 'LabGitHelpers'
+    New-Item -ItemType Directory -Path $labModuleDir -Force | Out-Null
+    Copy-Item -Path (Join-Path $repoRoot 'git-helpers\LabGitHelpers.psm1') -Destination $labModuleDir -Force
+    $installed += "LabGitHelpers module ($($target.Name))"
 
-$profileBlockStart = '# LabSession-Helpers-Start'
-$profileBlockEnd   = '# LabSession-Helpers-End'
-$profileBlock = @"
+    # LAB_AGENT_MODEL_FAST/_QUALITY are static facts about this VM's tier
+    # (safe to re-set on every new shell). The CURRENTLY SELECTED model is
+    # mutable state, not a fact - its source of truth is
+    # ~/.claude/settings.json's "model" field (see Set-LabModel in
+    # LocalClaude.psm1), which fast-model/quality-model update and which a
+    # new shell must NOT silently reset.
+    $localClaudeImportLine = ''
+    if ($supportsAgenticCli) {
+        $localClaudeModuleDir = Join-Path $target.ModulesDir 'LocalClaude'
+        New-Item -ItemType Directory -Path $localClaudeModuleDir -Force | Out-Null
+        Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\LocalClaude.psm1') -Destination $localClaudeModuleDir -Force
+        $installed += "LocalClaude module - claude-local/fast-model/quality-model/cloud-mode/local-mode ($($target.Name))"
+        $localClaudeImportLine = "`$env:LAB_AGENT_MODEL_FAST = '$chatModel'`n`$env:LAB_AGENT_MODEL_QUALITY = '$qualityModel'`nImport-Module LocalClaude"
+    }
+
+    $profileBlockStart = '# LabSession-Helpers-Start'
+    $profileBlockEnd   = '# LabSession-Helpers-End'
+    $profileBlock = @"
 $profileBlockStart
 `$env:LAB_WORKSPACE_ROOT = '$workspaceRoot'
 `$env:LAB_SCAFFOLD_TEMPLATE = '$scaffoldTemplateDir'
@@ -411,18 +421,33 @@ $localClaudeImportLine
 $profileBlockEnd
 "@
 
-if (-not (Test-Path $PROFILE)) {
-    New-Item -ItemType File -Path $PROFILE -Force | Out-Null
-}
-$profileContent = Get-Content -Path $PROFILE -Raw -ErrorAction SilentlyContinue
-if ($profileContent -and $profileContent.Contains($profileBlockStart)) {
-    Write-LabLog 'PowerShell profile already wired up - skipping.' -Level Info
-    $skipped += 'PowerShell profile block'
-}
-else {
-    Add-Content -Path $PROFILE -Value "`n$profileBlock`n"
-    Write-LabLog "Added LabGitHelpers auto-import to $PROFILE" -Level Success
-    $installed += 'PowerShell profile block'
+    $profileDir = Split-Path -Parent $target.ProfilePath
+    if (-not (Test-Path $profileDir)) { New-Item -ItemType Directory -Path $profileDir -Force | Out-Null }
+    if (-not (Test-Path $target.ProfilePath)) {
+        New-Item -ItemType File -Path $target.ProfilePath -Force | Out-Null
+    }
+    $profileContent = Get-Content -Path $target.ProfilePath -Raw -ErrorAction SilentlyContinue
+    if ($profileContent -and $profileContent.Contains($profileBlockStart)) {
+        # Re-run: refresh the block in place (model tier facts can change
+        # across re-runs, e.g. after a ModelOverride edit) rather than
+        # skipping - a stale, never-updated profile is exactly the bug
+        # that motivated this rewrite.
+        $blockPattern = [regex]::Escape($profileBlockStart) + '[\s\S]*?' + [regex]::Escape($profileBlockEnd)
+        $existingBlockMatch = [regex]::Match($profileContent, $blockPattern)
+        if ($existingBlockMatch.Success) {
+            $newContent = $profileContent.Remove($existingBlockMatch.Index, $existingBlockMatch.Length).Insert($existingBlockMatch.Index, $profileBlock)
+            Set-Content -Path $target.ProfilePath -Value $newContent -Encoding UTF8
+            $installed += "PowerShell profile block refreshed ($($target.Name))"
+        }
+        else {
+            Write-LabLog "Found '$profileBlockStart' in $($target.ProfilePath) but no matching '$profileBlockEnd' - leaving it untouched rather than risk corrupting it. Remove the stray marker line manually and re-run." -Level Warn
+            $failed += "PowerShell profile block ($($target.Name), corrupted marker)"
+        }
+    }
+    else {
+        Add-Content -Path $target.ProfilePath -Value "`n$profileBlock`n"
+        $installed += "PowerShell profile block ($($target.Name))"
+    }
 }
 
 # --- Summary --------------------------------------------------------------------
@@ -443,4 +468,4 @@ if ($needsNewShell.Count -gt 0) {
 if ($failed.Count -gt 0) {
     Write-Host "Failed:        $($failed -join ', ')" -ForegroundColor Red
 }
-Write-Host "`nOpen a NEW PowerShell window before using New-Routine/save/undo/claude-local, so the profile change takes effect."
+Write-Host "`nOpen a NEW PowerShell window (Windows PowerShell 5.1 or PowerShell 7+, both are wired up) before using New-Routine/save/undo/claude-local, so the profile change takes effect."
