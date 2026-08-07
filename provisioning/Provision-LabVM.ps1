@@ -149,6 +149,23 @@ else {
 }
 
 # --- Step 5: Claude Code CLI (optional - only on the agentic-capable tier) -----
+# The Windows installer does NOT reliably add its install dir to the
+# persistent User PATH by itself (confirmed on the real lab VM - it prints
+# manual System Properties instructions instead of doing it). Fix that
+# proactively, idempotently, whether or not we're about to (re)install -
+# this also repairs a VM from an earlier run that hit this exact problem.
+$claudeLocalBin = Join-Path $HOME '.local\bin'
+if (Test-Path $claudeLocalBin) {
+    $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+    if ($userPath -notlike "*$claudeLocalBin*") {
+        [Environment]::SetEnvironmentVariable('PATH', "$userPath;$claudeLocalBin", 'User')
+        Write-LabLog "Added $claudeLocalBin to the persistent User PATH." -Level Success
+    }
+    if ($env:PATH -notlike "*$claudeLocalBin*") {
+        $env:PATH = "$env:PATH;$claudeLocalBin"
+    }
+}
+
 if (-not $supportsAgenticCli) {
     Write-LabLog 'This VM tier does not support the agentic Claude Code CLI experience (needs the qwen3-coder tool-calling model) - skipping. Continue.dev chat/edit is unaffected.' -Level Info
     $skipped += 'Claude Code CLI (tier does not support it)'
@@ -162,11 +179,22 @@ else {
     try {
         Invoke-Expression (Invoke-RestMethod 'https://claude.ai/install.ps1')
         $installed += 'Claude Code CLI'
+
+        $claudeLocalBin = Join-Path $HOME '.local\bin'
+        if ((Test-Path $claudeLocalBin) -and ($env:PATH -notlike "*$claudeLocalBin*")) {
+            $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+            if ($userPath -notlike "*$claudeLocalBin*") {
+                [Environment]::SetEnvironmentVariable('PATH', "$userPath;$claudeLocalBin", 'User')
+            }
+            $env:PATH = "$env:PATH;$claudeLocalBin"
+            Write-LabLog "Added $claudeLocalBin to PATH (persistent + this session)." -Level Success
+        }
+
         if (Test-CommandExists 'claude') {
             Write-LabLog 'Claude Code CLI installed.' -Level Success
         }
         else {
-            Write-LabLog "Claude Code CLI installed, but 'claude' isn't on PATH in this shell - expected, will resolve in a new shell." -Level Warn
+            Write-LabLog "Claude Code CLI installed, but 'claude' still isn't found - installer may have used a different install location than expected ($claudeLocalBin)." -Level Warn
             $needsNewShell += 'Claude Code CLI'
         }
     }
