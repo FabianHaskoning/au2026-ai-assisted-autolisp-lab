@@ -27,6 +27,39 @@ claude --model qwen3-coder:30b
 variables - it sets them for just that one invocation and launches
 `claude` with the right model.
 
+## VS Code extension
+
+The official Claude Code VS Code extension (`anthropic.claude-code`) bundles
+its **own** copy of the CLI for its chat panel - it does not inherit
+`claude-local`'s per-invocation environment variables, and by default it
+wants you to sign in with a real Anthropic account. Getting the extension to
+use the local model instead needs two separate pieces, both handled by
+`Provision-LabVM.ps1`:
+
+1. **`~/.claude/settings.json`** - the officially documented, shared config
+   file between the standalone CLI and the extension's bundled process:
+
+   ```json
+   {
+     "env": {
+       "ANTHROPIC_AUTH_TOKEN": "ollama",
+       "ANTHROPIC_API_KEY": "",
+       "ANTHROPIC_BASE_URL": "http://localhost:11434"
+     },
+     "model": "qwen3-coder:30b"
+   }
+   ```
+
+   Provisioning merges these keys in rather than overwriting the file, in
+   case something else (an MCP server config, permissions) is already there.
+2. **`claudeCode.disableLoginPrompt`** in VS Code's own `settings.json` -
+   without this, the extension still shows an Anthropic sign-in screen on
+   first open, even though it will use the local model once you get past it.
+
+With both in place, opening the Claude Code panel in VS Code (the spark icon
+in the editor toolbar) talks to local Ollama immediately - no sign-in
+screen, no API key prompt.
+
 ## Why qwen3-coder:30b, not the Continue.dev default
 
 Claude Code (like any agentic CLI) needs reliable tool-calling to read/edit

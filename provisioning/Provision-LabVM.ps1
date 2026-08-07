@@ -4,8 +4,9 @@
     and the Continue.dev extension, pulls the right model for this
     VM's hardware, and bootstraps an attendee git workspace with the
     governance rules and git helpers wired in. On VMs with enough RAM,
-    also installs the real Claude Code CLI wired to the local Ollama
-    model (see claude-code-config/) as an optional, advanced path.
+    also installs the real Claude Code CLI and its VS Code extension,
+    both wired to the local Ollama model (see claude-code-config/) as
+    an optional, advanced path - no Anthropic account needed.
 
     .DESCRIPTION
     Safe to re-run any number of times - every step checks whether it's
@@ -204,7 +205,96 @@ else {
     }
 }
 
-# --- Step 6: render the Continue.dev model config (machine-wide) --------------
+# --- Step 6: point Claude Code (CLI + VS Code extension) at local Ollama ------
+# The VS Code extension bundles its OWN copy of the CLI for its chat panel -
+# it does NOT inherit LocalClaude.psm1's per-invocation environment
+# variables, and by default wants an Anthropic account sign-in. The
+# officially documented fix is ~/.claude/settings.json's "env" block, which
+# Claude Code's own docs confirm is shared by both the standalone CLI and
+# the extension's bundled process - plus disabling the extension's login
+# prompt in VS Code's own settings. Merges into any existing settings files
+# rather than overwriting them (VS Code's settings.json in particular holds
+# real user preferences, not just our config).
+function Set-JsonFileSetting {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][scriptblock]$Mutate
+    )
+    $dir = Split-Path -Parent $Path
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    $settings = if (Test-Path $Path) {
+        try { Get-Content -Path $Path -Raw | ConvertFrom-Json }
+        catch {
+            Write-LabLog "Could not parse existing $Path as JSON - leaving it untouched. Add the Claude Code local-model settings there manually (see claude-code-config/README.md)." -Level Warn
+            return $false
+        }
+    }
+    else {
+        [PSCustomObject]@{}
+    }
+    & $Mutate $settings
+    $settings | ConvertTo-Json -Depth 10 | Set-Content -Path $Path -Encoding UTF8
+    return $true
+}
+
+function Set-JsonProperty {
+    param($Object, [string]$Name, $Value)
+    if ($Object.PSObject.Properties.Name -contains $Name) {
+        $Object.$Name = $Value
+    }
+    else {
+        $Object | Add-Member -NotePropertyName $Name -NotePropertyValue $Value
+    }
+}
+
+if ($supportsAgenticCli) {
+    if (Test-CommandExists 'code') {
+        $extensions = & code --list-extensions 2>&1
+        if ($extensions -match 'anthropic\.claude-code') {
+            Write-LabLog 'Claude Code VS Code extension already installed - skipping.' -Level Info
+            $skipped += 'Claude Code VS Code extension'
+        }
+        else {
+            Write-LabLog 'Installing Claude Code VS Code extension...' -Level Info
+            try {
+                & code --install-extension anthropic.claude-code | Out-Null
+                $installed += 'Claude Code VS Code extension'
+            }
+            catch {
+                Write-LabLog "Claude Code VS Code extension install failed: $($_.Exception.Message)" -Level Error
+                $failed += 'Claude Code VS Code extension'
+            }
+        }
+    }
+
+    $claudeSettingsPath = Join-Path $HOME '.claude\settings.json'
+    $ok = Set-JsonFileSetting -Path $claudeSettingsPath -Mutate {
+        param($settings)
+        if (-not ($settings.PSObject.Properties.Name -contains 'env')) {
+            $settings | Add-Member -NotePropertyName 'env' -NotePropertyValue ([PSCustomObject]@{})
+        }
+        Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_AUTH_TOKEN' -Value 'ollama'
+        Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_API_KEY' -Value ''
+        Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_BASE_URL' -Value 'http://localhost:11434'
+        Set-JsonProperty -Object $settings -Name 'model' -Value $chatModel
+    }
+    if ($ok) {
+        Write-LabLog "Configured $claudeSettingsPath to route Claude Code (CLI + VS Code extension) to local Ollama." -Level Success
+        $installed += 'Claude Code local-model settings (~/.claude/settings.json)'
+    }
+
+    $vscodeSettingsPath = Join-Path $env:APPDATA 'Code\User\settings.json'
+    $ok = Set-JsonFileSetting -Path $vscodeSettingsPath -Mutate {
+        param($settings)
+        Set-JsonProperty -Object $settings -Name 'claudeCode.disableLoginPrompt' -Value $true
+    }
+    if ($ok) {
+        Write-LabLog "Disabled the Claude Code extension's Anthropic sign-in prompt in $vscodeSettingsPath." -Level Success
+        $installed += 'VS Code claudeCode.disableLoginPrompt setting'
+    }
+}
+
+# --- Step 7: render the Continue.dev model config (machine-wide) --------------
 $continueGlobalDir = Join-Path $HOME '.continue'
 if (-not (Test-Path $continueGlobalDir)) { New-Item -ItemType Directory -Path $continueGlobalDir -Force | Out-Null }
 $templatePath = Join-Path $repoRoot 'continue-config\config.yaml.template'
@@ -216,7 +306,7 @@ Set-Content -Path $configOutPath -Value $renderedConfig -Encoding UTF8
 Write-LabLog "Wrote Continue.dev config to $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel)" -Level Success
 $installed += 'Continue.dev config.yaml'
 
-# --- Step 7: bootstrap the attendee workspace ----------------------------------
+# --- Step 8: bootstrap the attendee workspace ----------------------------------
 $workspaceRoot = $config.WorkspaceRoot
 if (-not (Test-Path $workspaceRoot)) {
     New-Item -ItemType Directory -Path $workspaceRoot -Force | Out-Null
@@ -271,7 +361,7 @@ finally {
     Pop-Location
 }
 
-# --- Step 8: install git helpers -----------------------------------------------
+# --- Step 9: install git helpers -----------------------------------------------
 $psModulePath = ($env:PSModulePath -split ';')[0]
 $labModuleDir = Join-Path $psModulePath 'LabGitHelpers'
 New-Item -ItemType Directory -Path $labModuleDir -Force | Out-Null
@@ -288,7 +378,7 @@ catch {
     $failed += 'Portable git save/undo aliases'
 }
 
-# --- Step 9: install the local Claude Code CLI helper (optional) --------------
+# --- Step 10: install the local Claude Code CLI helper (optional) -------------
 $localClaudeImportLine = ''
 if ($supportsAgenticCli) {
     $localClaudeModuleDir = Join-Path $psModulePath 'LocalClaude'
