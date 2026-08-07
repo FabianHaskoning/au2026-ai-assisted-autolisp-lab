@@ -8,8 +8,8 @@ time through.
 - [ ] `provisioning\Test-LabVMSpecs.ps1` → summary is `PASS` (or `WARN`
       with nothing concerning)
 - [ ] Chosen model matches what's expected for this VM's hardware tier
-- [ ] `ollama list` shows both the chat and autocomplete models already
-      pulled (not pulling live)
+- [ ] `ollama list` shows the chat, autocomplete, and (if this tier
+      supports it) quality models already pulled (not pulling live)
 - [ ] New PowerShell window → `New-Routine preflight-check` succeeds
 - [ ] `save "test"` succeeds
 - [ ] `undo` succeeds and explains itself

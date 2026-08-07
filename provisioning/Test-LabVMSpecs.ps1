@@ -133,6 +133,7 @@ if (-not $results.Civil3DDetected) { $failures += 'Civil 3D 2026 not detected vi
 # --- Model recommendation ---------------------------------------------------
 $recommendation = Get-RecommendedOllamaModel -RamGB $totalRamGB -HasDedicatedGpu $hasDedicatedGpu -VramGB $vramGB
 $results.RecommendedChatModel         = $recommendation.ChatModel
+$results.RecommendedQualityChatModel  = $recommendation.QualityChatModel
 $results.RecommendedAutocompleteModel = $recommendation.AutocompleteModel
 $results.ModelReasoning               = $recommendation.Reasoning
 $results.SupportsAgenticCli           = $recommendation.SupportsAgenticCli
@@ -157,9 +158,12 @@ Write-Host "Git:              $(if ($results.GitVersion) { $results.GitVersion }
 Write-Host "Claude Code CLI:  $(if ($results.ClaudeCodeVersion) { $results.ClaudeCodeVersion } else { 'not installed (optional)' })"
 Write-Host "AutoCAD 2026:     $(if ($results.AutoCADDetected) { 'detected' } else { 'NOT DETECTED' })"
 Write-Host "Civil 3D 2026:    $(if ($results.Civil3DDetected) { 'detected' } else { 'NOT DETECTED' })"
-Write-Host "`nRecommended chat model:        $($results.RecommendedChatModel)"
-Write-Host "Recommended autocomplete model: $($results.RecommendedAutocompleteModel)"
-Write-Host "Local Claude Code CLI offered: $($results.SupportsAgenticCli)"
+Write-Host "`nRecommended chat model (fast, default): $($results.RecommendedChatModel)"
+if ($results.RecommendedQualityChatModel) {
+    Write-Host "Quality model (opt-in, slower):          $($results.RecommendedQualityChatModel)"
+}
+Write-Host "Recommended autocomplete model:          $($results.RecommendedAutocompleteModel)"
+Write-Host "Local Claude Code CLI offered:            $($results.SupportsAgenticCli)"
 Write-Host "Reasoning: $($results.ModelReasoning)`n"
 
 if ($warnings.Count -gt 0) {

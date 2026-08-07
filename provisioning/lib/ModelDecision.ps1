@@ -10,8 +10,9 @@ function Get-RecommendedOllamaModel {
         the recommended chat + autocomplete model for the given hardware.
 
         .OUTPUTS
-        Hashtable with ChatModel, AutocompleteModel, SupportsAgenticCli,
-        and Reasoning.
+        Hashtable with ChatModel (fast default), QualityChatModel (opt-in
+        upgrade, $null if the tier doesn't offer one), AutocompleteModel,
+        SupportsAgenticCli, and Reasoning.
     #>
     param(
         [Parameter(Mandatory)][double]$RamGB,
@@ -48,8 +49,11 @@ function Get-RecommendedOllamaModel {
         }
     }
 
+    $qualityModel = if ($table.Tiers[$tierIndex].ContainsKey('QualityChatModel')) { $table.Tiers[$tierIndex].QualityChatModel } else { $null }
+
     return @{
         ChatModel          = $table.Tiers[$tierIndex].ChatModel
+        QualityChatModel   = $qualityModel
         AutocompleteModel  = $table.AutocompleteModel
         SupportsAgenticCli = [bool]$table.Tiers[$tierIndex].SupportsAgenticCli
         Reasoning          = $reasoning

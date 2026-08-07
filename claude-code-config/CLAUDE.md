@@ -1,11 +1,14 @@
 # AutoLISP lab workspace (local Claude Code)
 
 This is the real Claude Code CLI, running on this VM but pointed at a local
-Ollama model (`qwen3-coder:30b`) instead of Anthropic's cloud API - see
+Ollama model by default instead of Anthropic's cloud API - see
 `claude-code-config/README.md` in the staging repo for how that's wired up.
 Start it with `claude-local` (an alias installed by provisioning), not the
 bare `claude` command, so the local-model environment variables are set
-correctly.
+correctly. `fast-model` (default) and `quality-model` switch between a
+small, fast model and a bigger, slower one; `cloud-mode`/`local-mode`
+switch between this local setup and a real Anthropic account, for anyone
+who has or wants one.
 
 **This is optional, advanced content.** The main 90-minute exercise uses
 Continue.dev inside VS Code. This local Claude Code setup is here for
@@ -22,10 +25,10 @@ directly at the AutoCAD command line.
 
 ## Performance expectations
 
-`qwen3-coder:30b` doesn't fully fit in this VM's GPU (4GB VRAM vs. the
-~23GB a fully GPU-resident run would want), so Ollama splits it between GPU
-and CPU. It works, but noticeably slower than cloud Claude Code. Work with
-that:
+The fast default model fits fully in this VM's GPU and responds reasonably
+quickly. The optional `quality-model` doesn't fully fit in a small GPU's
+VRAM, so Ollama splits it between GPU and CPU - noticeably slower. Either
+way, this is a local model, not a cloud one. Work with that:
 
 - Ask for one small, concrete change at a time rather than a whole routine
   in one prompt.

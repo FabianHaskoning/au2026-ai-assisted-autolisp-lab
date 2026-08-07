@@ -92,10 +92,14 @@ if ($config.ModelOverride) {
 else {
     $chatModel = $specs.RecommendedChatModel
 }
+$qualityModel = $specs.RecommendedQualityChatModel
 $autocompleteModel = $specs.RecommendedAutocompleteModel
 $supportsAgenticCli = [bool]$specs.SupportsAgenticCli
 
 # --- Step 3: pull the model(s) -------------------------------------------------
+# Pulls both the fast default and the quality opt-in (if this tier has one),
+# so switching between them later (fast-model / quality-model) is instant -
+# no surprise multi-GB download mid-session.
 if ($config.SkipOllamaPull) {
     Write-LabLog 'SkipOllamaPull is set - not pulling models.' -Level Info
     $skipped += 'Ollama model pull'
@@ -106,7 +110,9 @@ elseif (-not (Test-CommandExists 'ollama')) {
 }
 else {
     $alreadyPulled = & ollama list 2>&1
-    foreach ($model in @($chatModel, $autocompleteModel) | Select-Object -Unique) {
+    $modelsToPull = @($chatModel, $autocompleteModel)
+    if ($qualityModel) { $modelsToPull += $qualityModel }
+    foreach ($model in $modelsToPull | Select-Object -Unique) {
         if ($alreadyPulled -match [regex]::Escape($model)) {
             Write-LabLog "Model already pulled: $model" -Level Info
             $skipped += "ollama pull $model"
@@ -379,14 +385,19 @@ catch {
 }
 
 # --- Step 10: install the local Claude Code CLI helper (optional) -------------
+# LAB_AGENT_MODEL_FAST/_QUALITY are static facts about this VM's tier (safe
+# to re-set on every new shell). The CURRENTLY SELECTED model is a mutable
+# choice, not a fact - its source of truth is ~/.claude/settings.json's
+# "model" field (see Set-LabModel in LocalClaude.psm1), which fast-model /
+# quality-model update and which a new shell must NOT silently reset.
 $localClaudeImportLine = ''
 if ($supportsAgenticCli) {
     $localClaudeModuleDir = Join-Path $psModulePath 'LocalClaude'
     New-Item -ItemType Directory -Path $localClaudeModuleDir -Force | Out-Null
     Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\LocalClaude.psm1') -Destination $localClaudeModuleDir -Force
     Write-LabLog "Installed LocalClaude module to $localClaudeModuleDir" -Level Success
-    $installed += 'LocalClaude module (claude-local)'
-    $localClaudeImportLine = "`$env:LAB_AGENT_MODEL = '$chatModel'`nImport-Module LocalClaude"
+    $installed += 'LocalClaude module (claude-local, fast-model, quality-model, cloud-mode, local-mode)'
+    $localClaudeImportLine = "`$env:LAB_AGENT_MODEL_FAST = '$chatModel'`n`$env:LAB_AGENT_MODEL_QUALITY = '$qualityModel'`nImport-Module LocalClaude"
 }
 
 $profileBlockStart = '# LabSession-Helpers-Start'
@@ -419,7 +430,10 @@ $status = if ($failed.Count -gt 0) { 'FAIL' } elseif ($needsNewShell.Count -gt 0
 $statusColor = if ($failed.Count -gt 0) { 'Red' } elseif ($needsNewShell.Count -gt 0) { 'Yellow' } else { 'Green' }
 
 Write-Host "`n=== Provision-LabVM Summary: $status ===" -ForegroundColor $statusColor
-Write-Host "Chosen model:  $chatModel (chat/edit), $autocompleteModel (autocomplete)"
+Write-Host "Chosen model:  $chatModel (chat/edit, fast default), $autocompleteModel (autocomplete)"
+if ($qualityModel) {
+    Write-Host "Quality model (opt-in, slower): $qualityModel - switch with 'quality-model' / back with 'fast-model'"
+}
 Write-Host "Claude Code CLI (local, optional): $(if ($supportsAgenticCli) { "enabled - run 'claude-local' in a new shell" } else { 'not offered on this VM tier' })"
 Write-Host "Installed:     $($installed -join ', ')"
 Write-Host "Skipped:       $($skipped -join ', ')"
