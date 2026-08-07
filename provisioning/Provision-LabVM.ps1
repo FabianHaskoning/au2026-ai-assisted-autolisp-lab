@@ -3,7 +3,9 @@
     Idempotent provisioning for a lab VM: installs Git, VS Code, Ollama
     and the Continue.dev extension, pulls the right model for this
     VM's hardware, and bootstraps an attendee git workspace with the
-    governance rules and git helpers wired in.
+    governance rules and git helpers wired in. On VMs with enough RAM,
+    also installs the real Claude Code CLI wired to the local Ollama
+    model (see claude-code-config/) as an optional, advanced path.
 
     .DESCRIPTION
     Safe to re-run any number of times - every step checks whether it's
@@ -85,6 +87,7 @@ else {
     $chatModel = $specs.RecommendedChatModel
 }
 $autocompleteModel = $specs.RecommendedAutocompleteModel
+$supportsAgenticCli = [bool]$specs.SupportsAgenticCli
 
 # --- Step 3: pull the model(s) -------------------------------------------------
 if ($config.SkipOllamaPull) {
@@ -140,7 +143,35 @@ else {
     $failed += 'Continue.dev extension (VS Code not installed)'
 }
 
-# --- Step 5: render the Continue.dev model config (machine-wide) --------------
+# --- Step 5: Claude Code CLI (optional - only on the agentic-capable tier) -----
+if (-not $supportsAgenticCli) {
+    Write-LabLog 'This VM tier does not support the agentic Claude Code CLI experience (needs the qwen3-coder tool-calling model) - skipping. Continue.dev chat/edit is unaffected.' -Level Info
+    $skipped += 'Claude Code CLI (tier does not support it)'
+}
+elseif (Test-CommandExists 'claude') {
+    Write-LabLog 'Claude Code CLI already installed - skipping.' -Level Info
+    $skipped += 'Claude Code CLI'
+}
+else {
+    Write-LabLog 'Installing Claude Code CLI...' -Level Info
+    try {
+        Invoke-Expression (Invoke-RestMethod 'https://claude.ai/install.ps1')
+        if (Test-CommandExists 'claude') {
+            Write-LabLog 'Claude Code CLI installed.' -Level Success
+            $installed += 'Claude Code CLI'
+        }
+        else {
+            Write-LabLog "Claude Code CLI installer ran but 'claude' still isn't on PATH - a new shell/PATH refresh may be needed." -Level Warn
+            $failed += 'Claude Code CLI (installed but not yet on PATH)'
+        }
+    }
+    catch {
+        Write-LabLog "Claude Code CLI install failed: $($_.Exception.Message)" -Level Error
+        $failed += 'Claude Code CLI'
+    }
+}
+
+# --- Step 6: render the Continue.dev model config (machine-wide) --------------
 $continueGlobalDir = Join-Path $HOME '.continue'
 if (-not (Test-Path $continueGlobalDir)) { New-Item -ItemType Directory -Path $continueGlobalDir -Force | Out-Null }
 $templatePath = Join-Path $repoRoot 'continue-config\config.yaml.template'
@@ -152,7 +183,7 @@ Set-Content -Path $configOutPath -Value $renderedConfig -Encoding UTF8
 Write-LabLog "Wrote Continue.dev config to $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel)" -Level Success
 $installed += 'Continue.dev config.yaml'
 
-# --- Step 6: bootstrap the attendee workspace ----------------------------------
+# --- Step 7: bootstrap the attendee workspace ----------------------------------
 $workspaceRoot = $config.WorkspaceRoot
 if (-not (Test-Path $workspaceRoot)) {
     New-Item -ItemType Directory -Path $workspaceRoot -Force | Out-Null
@@ -187,6 +218,11 @@ try {
         Copy-Item -Path (Join-Path $repoRoot 'git-helpers\README.md') -Destination (Join-Path $workspaceRoot 'README-git-helpers.md')
     }
 
+    if ($supportsAgenticCli) {
+        Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\CLAUDE.md') -Destination (Join-Path $workspaceRoot 'CLAUDE.md') -Force
+        Write-LabLog 'Synced CLAUDE.md (local Claude Code CLI governance) into the workspace.' -Level Success
+    }
+
     $hasCommit = git log -1 2>&1
     if ($LASTEXITCODE -ne 0) {
         git add -A | Out-Null
@@ -198,7 +234,7 @@ finally {
     Pop-Location
 }
 
-# --- Step 7: install git helpers -----------------------------------------------
+# --- Step 8: install git helpers -----------------------------------------------
 $psModulePath = ($env:PSModulePath -split ';')[0]
 $labModuleDir = Join-Path $psModulePath 'LabGitHelpers'
 New-Item -ItemType Directory -Path $labModuleDir -Force | Out-Null
@@ -215,6 +251,17 @@ catch {
     $failed += 'Portable git save/undo aliases'
 }
 
+# --- Step 9: install the local Claude Code CLI helper (optional) --------------
+$localClaudeImportLine = ''
+if ($supportsAgenticCli) {
+    $localClaudeModuleDir = Join-Path $psModulePath 'LocalClaude'
+    New-Item -ItemType Directory -Path $localClaudeModuleDir -Force | Out-Null
+    Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\LocalClaude.psm1') -Destination $localClaudeModuleDir -Force
+    Write-LabLog "Installed LocalClaude module to $localClaudeModuleDir" -Level Success
+    $installed += 'LocalClaude module (claude-local)'
+    $localClaudeImportLine = "`$env:LAB_AGENT_MODEL = '$chatModel'`nImport-Module LocalClaude"
+}
+
 $profileBlockStart = '# LabSession-Helpers-Start'
 $profileBlockEnd   = '# LabSession-Helpers-End'
 $profileBlock = @"
@@ -222,6 +269,7 @@ $profileBlockStart
 `$env:LAB_WORKSPACE_ROOT = '$workspaceRoot'
 `$env:LAB_SCAFFOLD_TEMPLATE = '$scaffoldTemplateDir'
 Import-Module LabGitHelpers
+$localClaudeImportLine
 $profileBlockEnd
 "@
 
@@ -245,9 +293,10 @@ $statusColor = if ($status -eq 'FAIL') { 'Red' } else { 'Green' }
 
 Write-Host "`n=== Provision-LabVM Summary: $status ===" -ForegroundColor $statusColor
 Write-Host "Chosen model:  $chatModel (chat/edit), $autocompleteModel (autocomplete)"
+Write-Host "Claude Code CLI (local, optional): $(if ($supportsAgenticCli) { "enabled - run 'claude-local' in a new shell" } else { 'not offered on this VM tier' })"
 Write-Host "Installed:     $($installed -join ', ')"
 Write-Host "Skipped:       $($skipped -join ', ')"
 if ($failed.Count -gt 0) {
     Write-Host "Failed:        $($failed -join ', ')" -ForegroundColor Red
 }
-Write-Host "`nOpen a NEW PowerShell window before using New-Routine/save/undo, so the profile change takes effect."
+Write-Host "`nOpen a NEW PowerShell window before using New-Routine/save/undo/claude-local, so the profile change takes effect."

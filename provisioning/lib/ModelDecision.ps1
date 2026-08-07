@@ -10,7 +10,8 @@ function Get-RecommendedOllamaModel {
         the recommended chat + autocomplete model for the given hardware.
 
         .OUTPUTS
-        Hashtable with ChatModel, AutocompleteModel, and Reasoning.
+        Hashtable with ChatModel, AutocompleteModel, SupportsAgenticCli,
+        and Reasoning.
     #>
     param(
         [Parameter(Mandatory)][double]$RamGB,
@@ -38,15 +39,20 @@ function Get-RecommendedOllamaModel {
     $reasoning = $table.Tiers[$tierIndex].Note
     $escalated = $false
     if ($HasDedicatedGpu -and $VramGB -ge $table.DedicatedGpuMinVramGB -and $tierIndex -lt ($table.Tiers.Count - 1)) {
-        $tierIndex++
-        $escalated = $true
-        $reasoning = "Dedicated GPU with ${VramGB}GB VRAM detected (>= $($table.DedicatedGpuMinVramGB)GB threshold) - escalated one tier up. $($table.Tiers[$tierIndex].Note)"
+        $nextTier = $table.Tiers[$tierIndex + 1]
+        $escalationFloor = if ($nextTier.ContainsKey('MinRamGBForGpuEscalation')) { $nextTier.MinRamGBForGpuEscalation } else { $nextTier.MinRamGB }
+        if ($RamGB -ge $escalationFloor) {
+            $tierIndex++
+            $escalated = $true
+            $reasoning = "Dedicated GPU with ${VramGB}GB VRAM detected (>= $($table.DedicatedGpuMinVramGB)GB threshold) and enough RAM (>= ${escalationFloor}GB) to hold the bigger model - escalated one tier up. $($table.Tiers[$tierIndex].Note)"
+        }
     }
 
     return @{
-        ChatModel         = $table.Tiers[$tierIndex].ChatModel
-        AutocompleteModel = $table.AutocompleteModel
-        Reasoning         = $reasoning
-        Escalated         = $escalated
+        ChatModel          = $table.Tiers[$tierIndex].ChatModel
+        AutocompleteModel  = $table.AutocompleteModel
+        SupportsAgenticCli = [bool]$table.Tiers[$tierIndex].SupportsAgenticCli
+        Reasoning          = $reasoning
+        Escalated          = $escalated
     }
 }

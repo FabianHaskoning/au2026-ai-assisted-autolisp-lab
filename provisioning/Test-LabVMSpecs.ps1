@@ -88,6 +88,7 @@ if ($null -ne $freeDiskGB -and $freeDiskGB -lt 15) {
 $results.OllamaVersion  = Get-InstalledVersion -Name 'ollama' -VersionFlag '-v'
 $results.VSCodeVersion  = Get-InstalledVersion -Name 'code' -VersionFlag '--version'
 $results.GitVersion     = Get-InstalledVersion -Name 'git' -VersionFlag '--version'
+$results.ClaudeCodeVersion = Get-InstalledVersion -Name 'claude' -VersionFlag '--version'
 $results.ContinueInstalled = $false
 if (Test-CommandExists 'code') {
     try {
@@ -134,6 +135,11 @@ $recommendation = Get-RecommendedOllamaModel -RamGB $totalRamGB -HasDedicatedGpu
 $results.RecommendedChatModel         = $recommendation.ChatModel
 $results.RecommendedAutocompleteModel = $recommendation.AutocompleteModel
 $results.ModelReasoning               = $recommendation.Reasoning
+$results.SupportsAgenticCli           = $recommendation.SupportsAgenticCli
+
+if ($results.SupportsAgenticCli -and -not $results.ClaudeCodeVersion) {
+    $warnings += 'Claude Code CLI not detected - run Provision-LabVM.ps1 to install it (optional, only offered on this VM tier).'
+}
 
 # --- Report ------------------------------------------------------------------
 $status = if ($failures.Count -gt 0) { 'FAIL' } elseif ($warnings.Count -gt 0) { 'WARN' } else { 'PASS' }
@@ -148,10 +154,12 @@ Write-Host "Ollama:           $(if ($results.OllamaVersion) { $results.OllamaVer
 Write-Host "VS Code:          $(if ($results.VSCodeVersion) { $results.VSCodeVersion } else { 'NOT INSTALLED' })"
 Write-Host "Continue.dev:     $(if ($results.ContinueInstalled) { 'installed' } else { 'NOT INSTALLED' })"
 Write-Host "Git:              $(if ($results.GitVersion) { $results.GitVersion } else { 'NOT INSTALLED' })"
+Write-Host "Claude Code CLI:  $(if ($results.ClaudeCodeVersion) { $results.ClaudeCodeVersion } else { 'not installed (optional)' })"
 Write-Host "AutoCAD 2026:     $(if ($results.AutoCADDetected) { 'detected' } else { 'NOT DETECTED' })"
 Write-Host "Civil 3D 2026:    $(if ($results.Civil3DDetected) { 'detected' } else { 'NOT DETECTED' })"
 Write-Host "`nRecommended chat model:        $($results.RecommendedChatModel)"
 Write-Host "Recommended autocomplete model: $($results.RecommendedAutocompleteModel)"
+Write-Host "Local Claude Code CLI offered: $($results.SupportsAgenticCli)"
 Write-Host "Reasoning: $($results.ModelReasoning)`n"
 
 if ($warnings.Count -gt 0) {

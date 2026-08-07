@@ -5,41 +5,56 @@ Bogers). This covers running the environment, not the curriculum - what
 attendees actually build and how the room is paced is the presenter's call,
 decided separately.
 
-## Before anything else: confirm real VM access
+## VM access (confirmed)
 
-This repo builds and tests everything locally. It has **not** been deployed
-to the real Skillable VM (LabProfile 219488) yet. Before Sept 16:
+Author access to LabProfile 219488 is confirmed via **Skillable Studio**
+(`labondemand.com/LabProfile/219488`, not `manage.skillable.com` - that
+domain doesn't exist). Launching the profile there opens a browser-streamed
+desktop (no external RDP/SSH) with a **Capture** button to save changes back
+to the template checkpoint. Confirmed real specs on the template VM: 56GB
+RAM, 8-core AMD EPYC, NVIDIA Tesla T4 (4GB VRAM) - Ollama, VS Code,
+Continue.dev, and git were already present on the image.
 
-1. Log in to `manage.skillable.com` (or `cloud.skillable.com`) with the
-   account tied to the AU submission.
-2. Find LabProfile 219488 under "My Content"/"My Classes".
-3. Look for an **Edit** or **Author** option (not just "Launch"/"Register").
-   That opens *Lab Architect*, which allows RDP into the template VM in
-   checkpoint-editing mode.
-4. If only an attendee-facing link is available, the real VM has to be
-   configured through Autodesk's AU logistics/Skillable production contact
-   instead - hand them `provisioning/Provision-LabVM.ps1` and this repo.
+**Outstanding:** the profile shows "Security Review Required" - it can't be
+launched via API or external link until that review passes. That blocks the
+*attendee-facing* launch path, not the author's own manual Launch button.
+Resolve this well before Sept 16 (see the "Request Security Review" link on
+the profile page).
+
+This repo is public at
+`https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab` - clone
+it directly onto the VM, no credentials needed:
+
+```powershell
+git clone https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
+```
 
 ## Pre-session validation checklist
 
-Run this on the actual template VM once author access is confirmed (and
-again after any change to the image), in this order:
+Run this on the actual template VM (and again after any change to the
+image), in this order:
 
-1. `provisioning\Test-LabVMSpecs.ps1` - confirm the summary is `PASS` (or
-   `WARN` with nothing concerning). Note the recommended model.
-2. `provisioning\Provision-LabVM.ps1` (as Administrator) - confirm it
+1. `git pull` in the cloned repo - make sure the VM has the latest.
+2. `provisioning\Test-LabVMSpecs.ps1` - confirm the summary is `PASS` (or
+   `WARN` with nothing concerning). Note the recommended model(s) and
+   whether the local Claude Code CLI is offered on this tier.
+3. `provisioning\Provision-LabVM.ps1` (as Administrator) - confirm it
    finishes with `PASS` and lists everything as `Installed` (first run) or
    `Skipped` (a re-run).
-3. Open a **new** PowerShell window, run `New-Routine test-routine` -
+4. Open a **new** PowerShell window, run `New-Routine test-routine` -
    confirm it creates a branch and files without error.
-4. Run `save "test"` and `undo` - confirm both behave as documented in
+5. Run `save "test"` and `undo` - confirm both behave as documented in
    `git-helpers/README.md`.
-5. Delete the `test-routine` branch/folder and reset the workspace before
+6. Delete the `test-routine` branch/folder and reset the workspace before
    handing the VM to an attendee.
-6. Open VS Code in the workspace, open the Continue.dev chat panel, send a
+7. Open VS Code in the workspace, open the Continue.dev chat panel, send a
    trivial prompt ("say hello") - confirm it responds using the local
    Ollama model (check the model name shown in the Continue panel).
-7. Confirm AutoCAD 2026 and Civil 3D 2026 both launch normally.
+8. If the VM tier supports it: open a terminal, run `claude-local`, send a
+   trivial prompt - confirm it responds using the local model (no Anthropic
+   login prompt should appear). Expect this to be noticeably slower than
+   the Continue.dev chat - see `claude-code-config/README.md`.
+9. Confirm AutoCAD 2026 and Civil 3D 2026 both launch normally.
 
 Once this passes on one VM, use `facilitator/pre-flight-checklist.md` as the
 fast, repeatable version for checking the rest of the fleet.

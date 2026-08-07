@@ -17,6 +17,9 @@ time through.
 - [ ] VS Code opens the workspace with no error banners
 - [ ] Continue.dev chat panel responds to a trivial prompt, using the
       local Ollama model (check the model name shown in the panel)
+- [ ] If this tier supports it: `claude-local` responds to a trivial
+      prompt, no Anthropic login prompt appears (optional - skip if
+      `Test-LabVMSpecs.ps1` says the tier doesn't support it)
 - [ ] AutoCAD 2026 launches normally
 - [ ] Civil 3D 2026 launches normally
 - [ ] Sign off: initials + timestamp
