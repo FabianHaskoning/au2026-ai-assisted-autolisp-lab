@@ -35,7 +35,7 @@ function Set-ContinueConfigBlock {
     #>
     param(
         [Parameter(Mandatory)][string]$BlockId,
-        [Parameter(Mandatory)][string[]]$Content,
+        [Parameter(Mandatory)][AllowEmptyString()][string[]]$Content,
         [string]$ParentKey = 'models',
         [Parameter(Mandatory)][string]$Path
     )
@@ -77,6 +77,29 @@ function Set-ContinueConfigBlock {
     Set-Content -Path $Path -Value $newContent -Encoding UTF8
 }
 
+function Set-ContinueConfigModelTag {
+    <#
+        .SYNOPSIS
+        Updates the "model:" line for an existing named entry (e.g.
+        "Lab Assistant (Ollama)") in the config.yaml at $Path, in place.
+        No-ops if $Path doesn't exist or the entry isn't found - callers
+        that need to guarantee the entry exists should use
+        Set-ContinueConfigBlock first.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$EntryName,
+        [Parameter(Mandatory)][string]$NewModel,
+        [Parameter(Mandatory)][string]$Path
+    )
+    if (-not (Test-Path $Path)) { return }
+    $content = Get-Content -Path $Path -Raw
+    $pattern = '(name: ' + [regex]::Escape($EntryName) + '[\s\S]*?model: )"[^"]*"'
+    $updated = $content -replace $pattern, "`$1`"$NewModel`""
+    if ($updated -ne $content) {
+        Set-Content -Path $Path -Value $updated -Encoding UTF8
+    }
+}
+
 function Remove-ContinueConfigBlock {
     param([Parameter(Mandatory)][string]$BlockId, [Parameter(Mandatory)][string]$Path)
     if (-not (Test-Path $Path)) { return }
@@ -92,4 +115,4 @@ function Remove-ContinueConfigBlock {
     }
 }
 
-Export-ModuleMember -Function Get-ContinueConfigPath, Set-ContinueConfigBlock, Remove-ContinueConfigBlock
+Export-ModuleMember -Function Get-ContinueConfigPath, Set-ContinueConfigBlock, Set-ContinueConfigModelTag, Remove-ContinueConfigBlock

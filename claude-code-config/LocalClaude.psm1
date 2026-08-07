@@ -117,17 +117,94 @@ function Set-LabModel {
         Save-JsonFileSettings -Path $claudeSettingsPath -Settings $settings
     }
 
-    $continueConfigPath = Get-ContinueConfigPath -Root $Root
-    if (Test-Path $continueConfigPath) {
-        $content = Get-Content -Path $continueConfigPath -Raw
-        $updated = $content -replace '(name: Lab Assistant \(Ollama\)[\s\S]*?model: )"[^"]*"', "`$1`"$model`""
-        Set-Content -Path $continueConfigPath -Value $updated -Encoding UTF8
-    }
+    Set-ContinueConfigModelTag -EntryName 'Lab Assistant (Ollama)' -NewModel $model -Path (Get-ContinueConfigPath -Root $Root)
 
     Write-Host "Switched to the $Tier model: $model (Claude Code CLI, VS Code extension, and Continue.dev all updated)." -ForegroundColor Green
     if ($Tier -eq 'Quality') {
         Write-Host "This is the bigger model - expect noticeably slower responses on this VM's GPU. Switch back any time with 'fast-model'." -ForegroundColor Yellow
     }
+}
+
+function Get-PulledOllamaModelTags {
+    <#
+        .SYNOPSIS
+        Parses `ollama list` into a de-duplicated array of model tags
+        (first column, header row skipped). Returns @() if Ollama isn't
+        installed, isn't running, or nothing is pulled yet.
+    #>
+    if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) { return @() }
+    $raw = & ollama list 2>&1
+    if ($LASTEXITCODE -ne 0 -or -not $raw) { return @() }
+    $lines = @($raw | ForEach-Object { $_.ToString() } | Where-Object { $_.Trim() })
+    if ($lines.Count -le 1) { return @() }
+    $tags = $lines | Select-Object -Skip 1 | ForEach-Object { ($_ -split '\s+')[0] } | Where-Object { $_ }
+    return @($tags | Select-Object -Unique)
+}
+
+function Set-LabModelByTag {
+    <#
+        .SYNOPSIS
+        Switches Claude Code (CLI + VS Code extension) and Continue.dev to
+        any locally pulled Ollama model tag, not just the fast/quality
+        pair fast-model/quality-model offer. Same underlying mechanism as
+        Set-LabModel: ~/.claude/settings.json's "model" field, and the
+        "Lab Assistant (Ollama)" block in ~/.continue/config.yaml.
+
+        .PARAMETER Model
+        Set an exact tag directly, no prompt - for scripting/testing, or
+        a power user who already knows the tag. Without it, lists what's
+        locally pulled and prompts for a choice.
+
+        .EXAMPLE
+        switch-model
+        switch-model -Model qwen2.5-coder:7b
+    #>
+    param(
+        [string]$Model,
+        [string]$Root = $HOME
+    )
+
+    if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
+        Write-Error 'Set-LabModelByTag: Ollama is not installed.'
+        return
+    }
+
+    $pulledModels = Get-PulledOllamaModelTags
+    if ($pulledModels.Count -eq 0) {
+        Write-Error "Set-LabModelByTag: no models are pulled yet ('ollama list' returned none). Run 'ollama pull <tag>' first."
+        return
+    }
+
+    if ($Model) {
+        $chosenModel = $Model
+        if ($pulledModels -notcontains $Model) {
+            Write-Warning "Set-LabModelByTag: '$Model' isn't in 'ollama list' - continuing anyway; Ollama itself will error if it's genuinely not pulled."
+        }
+    }
+    else {
+        Write-Host 'Locally pulled Ollama models:' -ForegroundColor Cyan
+        for ($i = 0; $i -lt $pulledModels.Count; $i++) {
+            Write-Host ("  [{0}] {1}" -f ($i + 1), $pulledModels[$i])
+        }
+        $selection = Read-Host "Pick a model (1-$($pulledModels.Count))"
+        $index = 0
+        if (-not [int]::TryParse($selection, [ref]$index) -or $index -lt 1 -or $index -gt $pulledModels.Count) {
+            Write-Error "Set-LabModelByTag: '$selection' is not a valid choice."
+            return
+        }
+        $chosenModel = $pulledModels[$index - 1]
+    }
+
+    $claudeSettingsPath = Get-ClaudeSettingsPath -Root $Root
+    $settings = Get-JsonFileSettings -Path $claudeSettingsPath
+    if ($settings) {
+        Set-JsonProperty -Object $settings -Name 'model' -Value $chosenModel
+        Save-JsonFileSettings -Path $claudeSettingsPath -Settings $settings
+    }
+
+    Set-ContinueConfigModelTag -EntryName 'Lab Assistant (Ollama)' -NewModel $chosenModel -Path (Get-ContinueConfigPath -Root $Root)
+
+    Write-Host "Switched to model: $chosenModel (Claude Code CLI, VS Code extension, and Continue.dev all updated)." -ForegroundColor Green
 }
 
 function Enable-CloudClaude {
@@ -203,8 +280,9 @@ function Set-LabModel-Quality { Set-LabModel -Tier Quality }
 Set-Alias -Name claude-local -Value Start-LocalClaude
 Set-Alias -Name fast-model -Value Set-LabModel-Fast
 Set-Alias -Name quality-model -Value Set-LabModel-Quality
+Set-Alias -Name switch-model -Value Set-LabModelByTag
 Set-Alias -Name cloud-mode -Value Enable-CloudClaude
 Set-Alias -Name local-mode -Value Enable-LocalClaude
 
-Export-ModuleMember -Function Start-LocalClaude, Set-LabModel, Enable-CloudClaude, Enable-LocalClaude, Set-LabModel-Fast, Set-LabModel-Quality `
-    -Alias claude-local, fast-model, quality-model, cloud-mode, local-mode
+Export-ModuleMember -Function Start-LocalClaude, Set-LabModel, Set-LabModelByTag, Get-PulledOllamaModelTags, Enable-CloudClaude, Enable-LocalClaude, Set-LabModel-Fast, Set-LabModel-Quality `
+    -Alias claude-local, fast-model, quality-model, switch-model, cloud-mode, local-mode

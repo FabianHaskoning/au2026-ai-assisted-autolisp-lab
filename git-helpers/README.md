@@ -18,6 +18,11 @@ new PowerShell window without attendees doing anything:
 | `save "<message>"` (alias for `Save-Progress`) | `git add -A` + `git commit -m "<message>"`. |
 | `undo` (alias for `Undo-LastCommit`) | `git reset --soft HEAD~1` - **never** discards file changes, only uncommits them. |
 
+On a take-home machine set up with `-Purpose General` (goal isn't AutoLISP
+routines), `save`/`undo` work exactly the same - only `New-Routine` needs
+the AutoLISP scaffold template, so it reports "scaffold template not
+found" until you re-run provisioning with `-Purpose Lisp`.
+
 ## Taking it home
 
 You don't need `LabGitHelpers.psm1` or PowerShell to get the same workflow

@@ -25,17 +25,32 @@
     ~/.continue/config.yaml is merged into rather than overwritten. See
     take-home/README.md.
 
+    Under -TakeHome, three things are optional and - unless passed
+    explicitly or -NonInteractive is set - are asked about interactively:
+    installing Git for Windows (-SkipGit), installing VS Code + Continue.dev
+    (-SkipVSCode), and whether the goal is AutoLISP routines at all
+    (-Purpose Lisp|General - General skips the AutoLISP-specific workspace
+    content). Ollama and the Claude Code CLI itself are never optional -
+    that's the core of what -TakeHome sets up.
+
     .EXAMPLE
     .\Provision-LabVM.ps1
 
     .EXAMPLE
     .\Provision-LabVM.ps1 -TakeHome
+
+    .EXAMPLE
+    .\Provision-LabVM.ps1 -TakeHome -SkipGit -Purpose General -NonInteractive
 #>
 
 [CmdletBinding()]
 param(
     [switch]$TakeHome,
-    [string]$WorkspaceRootOverride
+    [string]$WorkspaceRootOverride,
+    [switch]$SkipGit,
+    [switch]$SkipVSCode,
+    [ValidateSet('Lisp', 'General')][string]$Purpose,
+    [switch]$NonInteractive
 )
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -53,13 +68,56 @@ $failed        = @()
 # running processes. Expected on every VM's first run, not a real failure.
 $needsNewShell = @()
 
+# --- Resolve take-home optional-install choices -------------------------------
+# Done BEFORE the elevation check on purpose: the not-elevated + -TakeHome
+# path below relaunches an entirely new elevated process and returns, so
+# anything placed after the elevation check would either never run in the
+# process that does the real work, or would have to prompt twice. Resolve
+# once here, then forward the resolved values (plus a forced
+# -NonInteractive) into the relaunch so the elevated child re-derives the
+# same choices deterministically instead of prompting again.
+$skipGitExplicit    = $PSBoundParameters.ContainsKey('SkipGit')
+$skipVSCodeExplicit = $PSBoundParameters.ContainsKey('SkipVSCode')
+$purposeExplicit    = $PSBoundParameters.ContainsKey('Purpose')
+
+if (-not $TakeHome -and ($skipGitExplicit -or $skipVSCodeExplicit -or $purposeExplicit -or $NonInteractive)) {
+    Write-LabLog '-SkipGit/-SkipVSCode/-Purpose/-NonInteractive only apply with -TakeHome - ignored on this run.' -Level Info
+}
+
+if ($TakeHome) {
+    if ($NonInteractive) {
+        $effectiveSkipGit    = [bool]$SkipGit
+        $effectiveSkipVSCode = [bool]$SkipVSCode
+        $effectivePurpose    = if ($purposeExplicit) { $Purpose } else { 'Lisp' }
+    }
+    else {
+        $effectiveSkipGit = if ($skipGitExplicit) { [bool]$SkipGit } else {
+            (Read-Host 'Install Git for Windows as part of this setup? (Y/n)') -match '^(n|no)$'
+        }
+        $effectiveSkipVSCode = if ($skipVSCodeExplicit) { [bool]$SkipVSCode } else {
+            (Read-Host 'Install VS Code + Continue.dev as part of this setup? (Y/n - say n if you only want the Claude Code CLI)') -match '^(n|no)$'
+        }
+        $effectivePurpose = if ($purposeExplicit) { $Purpose } else {
+            if ((Read-Host 'Is your main goal here writing AutoLISP routines for AutoCAD/Civil 3D? (Y/n)') -match '^(n|no)$') { 'General' } else { 'Lisp' }
+        }
+    }
+}
+else {
+    $effectiveSkipGit    = $false
+    $effectiveSkipVSCode = $false
+    $effectivePurpose    = 'Lisp'
+}
+
 # --- Elevation check ---------------------------------------------------------
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     if ($TakeHome) {
         Write-LabLog 'Take-home mode: not running elevated - relaunching an elevated PowerShell window for the winget installs (you may see a UAC prompt)...' -Level Warn
-        $relaunchArgs = @('-NoExit', '-File', "`"$PSCommandPath`"", '-TakeHome')
+        $relaunchArgs = @('-NoExit', '-File', "`"$PSCommandPath`"", '-TakeHome', '-NonInteractive')
         if ($WorkspaceRootOverride) { $relaunchArgs += @('-WorkspaceRootOverride', "`"$WorkspaceRootOverride`"") }
+        if ($effectiveSkipGit)      { $relaunchArgs += '-SkipGit' }
+        if ($effectiveSkipVSCode)   { $relaunchArgs += '-SkipVSCode' }
+        $relaunchArgs += @('-Purpose', $effectivePurpose)
         Start-Process -FilePath (Get-Process -Id $PID).Path -Verb RunAs -ArgumentList $relaunchArgs
         return
     }
@@ -67,40 +125,35 @@ if (-not $isAdmin) {
     return
 }
 
-function Install-ViaWinget {
-    param(
-        [Parameter(Mandatory)][string]$DisplayName,
-        [Parameter(Mandatory)][string]$WingetId,
-        [Parameter(Mandatory)][string]$CommandToCheck
-    )
-    if (Test-CommandExists $CommandToCheck) {
-        Write-LabLog "$DisplayName already installed - skipping." -Level Info
-        $script:skipped += $DisplayName
-        return
+# --- Step 1: core tools -------------------------------------------------------
+# Install-ViaWinget lives in lib\Common.ps1 (dot-sourced above) so it can be
+# tested in isolation by shadowing a fake `winget` function.
+if (-not $effectiveSkipGit) {
+    Install-ViaWinget -DisplayName 'Git for Windows' -WingetId 'Git.Git' -CommandToCheck 'git'
+}
+else {
+    Write-LabLog 'Skipping Git for Windows install (you said you already have your own git setup).' -Level Info
+    $skipped += 'Git for Windows (skipped by user choice)'
+}
+if (-not $effectiveSkipVSCode) {
+    Install-ViaWinget -DisplayName 'VS Code' -WingetId 'Microsoft.VisualStudioCode' -CommandToCheck 'code'
+}
+else {
+    Write-LabLog 'Skipping VS Code install (you said you only want the Claude Code CLI).' -Level Info
+    $skipped += 'VS Code (skipped by user choice)'
+}
+Install-ViaWinget -DisplayName 'Ollama' -WingetId 'Ollama.Ollama' -CommandToCheck 'ollama'
+
+$gitAvailable = Test-CommandExists 'git'
+if (-not $gitAvailable) {
+    if ($effectiveSkipGit) {
+        Write-LabLog 'Git was skipped by choice - the workspace git repo, save/undo/New-Routine, and the portable git aliases will not be set up. Install git yourself later and re-run this script if you change your mind.' -Level Info
     }
-    Write-LabLog "Installing $DisplayName via winget..." -Level Info
-    try {
-        winget install --id $WingetId --silent --accept-package-agreements --accept-source-agreements | Out-Null
-        if (Test-CommandExists $CommandToCheck) {
-            Write-LabLog "$DisplayName installed." -Level Success
-            $script:installed += $DisplayName
-        }
-        else {
-            Write-LabLog "${DisplayName}: winget reported success but '$CommandToCheck' still isn't on PATH in this shell - expected, will resolve in a new shell." -Level Warn
-            $script:installed += $DisplayName
-            $script:needsNewShell += $DisplayName
-        }
-    }
-    catch {
-        Write-LabLog "$DisplayName install failed: $($_.Exception.Message)" -Level Error
-        $script:failed += $DisplayName
+    else {
+        Write-LabLog 'Git is not on PATH (install may have failed - see above) - the workspace git repo, save/undo/New-Routine, and the portable git aliases cannot be set up. Fix the Git install and re-run this script.' -Level Error
+        $failed += 'Workspace git repo + git helpers (git not available)'
     }
 }
-
-# --- Step 1: core tools -------------------------------------------------------
-Install-ViaWinget -DisplayName 'Git for Windows' -WingetId 'Git.Git' -CommandToCheck 'git'
-Install-ViaWinget -DisplayName 'VS Code'         -WingetId 'Microsoft.VisualStudioCode' -CommandToCheck 'code'
-Install-ViaWinget -DisplayName 'Ollama'          -WingetId 'Ollama.Ollama' -CommandToCheck 'ollama'
 
 # --- Step 2: decide which model this VM should run ----------------------------
 Write-LabLog 'Running hardware diagnostics to choose a model...' -Level Info
@@ -153,7 +206,11 @@ else {
 }
 
 # --- Step 4: Continue.dev extension --------------------------------------------
-if (Test-CommandExists 'code') {
+if ($effectiveSkipVSCode) {
+    Write-LabLog 'VS Code was skipped - not installing the Continue.dev extension.' -Level Info
+    $skipped += 'Continue.dev extension (VS Code skipped)'
+}
+elseif (Test-CommandExists 'code') {
     $extensions = & code --list-extensions 2>&1
     if ($extensions -match 'continue\.continue') {
         Write-LabLog 'Continue.dev extension already installed - skipping.' -Level Info
@@ -275,7 +332,11 @@ function Set-JsonProperty {
 }
 
 if ($supportsAgenticCli) {
-    if (Test-CommandExists 'code') {
+    if ($effectiveSkipVSCode) {
+        Write-LabLog 'VS Code was skipped - not installing the Claude Code VS Code extension. The standalone CLI (claude-local) still works fully.' -Level Info
+        $skipped += 'Claude Code VS Code extension (VS Code skipped)'
+    }
+    elseif (Test-CommandExists 'code') {
         $extensions = & code --list-extensions 2>&1
         if ($extensions -match 'anthropic\.claude-code') {
             Write-LabLog 'Claude Code VS Code extension already installed - skipping.' -Level Info
@@ -294,6 +355,8 @@ if ($supportsAgenticCli) {
         }
     }
 
+    # Always runs, VS Code or not - the standalone CLI needs zero VS Code
+    # involvement to reach the local Ollama model.
     $claudeSettingsPath = Join-Path $HOME '.claude\settings.json'
     $ok = Set-JsonFileSetting -Path $claudeSettingsPath -Mutate {
         param($settings)
@@ -310,14 +373,16 @@ if ($supportsAgenticCli) {
         $installed += 'Claude Code local-model settings (~/.claude/settings.json)'
     }
 
-    $vscodeSettingsPath = Join-Path $env:APPDATA 'Code\User\settings.json'
-    $ok = Set-JsonFileSetting -Path $vscodeSettingsPath -Mutate {
-        param($settings)
-        Set-JsonProperty -Object $settings -Name 'claudeCode.disableLoginPrompt' -Value $true
-    }
-    if ($ok) {
-        Write-LabLog "Disabled the Claude Code extension's Anthropic sign-in prompt in $vscodeSettingsPath." -Level Success
-        $installed += 'VS Code claudeCode.disableLoginPrompt setting'
+    if (-not $effectiveSkipVSCode) {
+        $vscodeSettingsPath = Join-Path $env:APPDATA 'Code\User\settings.json'
+        $ok = Set-JsonFileSetting -Path $vscodeSettingsPath -Mutate {
+            param($settings)
+            Set-JsonProperty -Object $settings -Name 'claudeCode.disableLoginPrompt' -Value $true
+        }
+        if ($ok) {
+            Write-LabLog "Disabled the Claude Code extension's Anthropic sign-in prompt in $vscodeSettingsPath." -Level Success
+            $installed += 'VS Code claudeCode.disableLoginPrompt setting'
+        }
     }
 }
 
@@ -350,8 +415,15 @@ if ($TakeHome) {
         '    roles:'
         '      - autocomplete'
     )
-    Set-ContinueConfigBlock -BlockId 'Ollama' -Content $ollamaBlockContent -ParentKey 'models' -Path $configOutPath
-    Write-LabLog "Merged the local-Ollama block into $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel) - any other content in that file was left untouched." -Level Success
+    try {
+        Set-ContinueConfigBlock -BlockId 'Ollama' -Content $ollamaBlockContent -ParentKey 'models' -Path $configOutPath
+        Write-LabLog "Merged the local-Ollama block into $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel) - any other content in that file was left untouched." -Level Success
+        $installed += 'Continue.dev config.yaml (Ollama block merged)'
+    }
+    catch {
+        Write-LabLog "Could not merge the local-Ollama block into ${configOutPath}: $($_.Exception.Message). Re-run '.\Provision-LabVM.ps1 -TakeHome' to retry, or paste this block under 'models:' in $configOutPath yourself:`n$($ollamaBlockContent -join "`n")" -Level Error
+        $failed += 'Continue.dev config.yaml (Ollama block merge failed)'
+    }
 }
 else {
     $templatePath = Join-Path $repoRoot 'continue-config\config.yaml.template'
@@ -360,8 +432,8 @@ else {
         -replace '\{\{OLLAMA_AUTOCOMPLETE_MODEL\}\}', $autocompleteModel
     Set-Content -Path $configOutPath -Value $renderedConfig -Encoding UTF8
     Write-LabLog "Wrote Continue.dev config to $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel)" -Level Success
+    $installed += 'Continue.dev config.yaml'
 }
-$installed += 'Continue.dev config.yaml'
 
 # --- Step 8: bootstrap the attendee workspace ----------------------------------
 $workspaceRoot = if ($WorkspaceRootOverride) {
@@ -381,46 +453,59 @@ if (-not (Test-Path $workspaceRoot)) {
 
 Push-Location $workspaceRoot
 try {
-    if (-not (Test-Path (Join-Path $workspaceRoot '.git'))) {
-        git init | Out-Null
-        git config user.name $config.GitUserNamePlaceholder
-        git config user.email $config.GitUserEmailPlaceholder
-        Write-LabLog "Initialized git repo at $workspaceRoot with placeholder identity." -Level Success
-        $installed += 'Workspace git repo'
+    if ($gitAvailable) {
+        if (-not (Test-Path (Join-Path $workspaceRoot '.git'))) {
+            git init | Out-Null
+            git config user.name $config.GitUserNamePlaceholder
+            git config user.email $config.GitUserEmailPlaceholder
+            Write-LabLog "Initialized git repo at $workspaceRoot with placeholder identity." -Level Success
+            $installed += 'Workspace git repo'
+        }
+        else {
+            Write-LabLog "$workspaceRoot is already a git repo - skipping git init." -Level Info
+            $skipped += 'Workspace git repo'
+        }
     }
     else {
-        Write-LabLog "$workspaceRoot is already a git repo - skipping git init." -Level Info
-        $skipped += 'Workspace git repo'
+        $skipped += 'Workspace git repo (git not available)'
     }
 
-    $workspaceRulesDir = Join-Path $workspaceRoot '.continue\rules'
-    New-Item -ItemType Directory -Path $workspaceRulesDir -Force | Out-Null
-    Copy-Item -Path (Join-Path $repoRoot 'continue-config\rules\*.md') -Destination $workspaceRulesDir -Force
-    Write-LabLog "Synced governance rules into $workspaceRulesDir" -Level Success
+    if ($effectivePurpose -eq 'Lisp') {
+        $workspaceRulesDir = Join-Path $workspaceRoot '.continue\rules'
+        New-Item -ItemType Directory -Path $workspaceRulesDir -Force | Out-Null
+        Copy-Item -Path (Join-Path $repoRoot 'continue-config\rules\*.md') -Destination $workspaceRulesDir -Force
+        Write-LabLog "Synced governance rules into $workspaceRulesDir" -Level Success
 
-    $scaffoldTemplateDir = Join-Path $workspaceRoot '.scaffold-template'
-    New-Item -ItemType Directory -Path $scaffoldTemplateDir -Force | Out-Null
-    Copy-Item -Path (Join-Path $repoRoot 'scaffold\*') -Destination $scaffoldTemplateDir -Recurse -Force
-    Write-LabLog "Synced scaffold template into $scaffoldTemplateDir" -Level Success
+        $scaffoldTemplateDir = Join-Path $workspaceRoot '.scaffold-template'
+        New-Item -ItemType Directory -Path $scaffoldTemplateDir -Force | Out-Null
+        Copy-Item -Path (Join-Path $repoRoot 'scaffold\*') -Destination $scaffoldTemplateDir -Recurse -Force
+        Write-LabLog "Synced scaffold template into $scaffoldTemplateDir" -Level Success
 
-    if (-not (Test-Path (Join-Path $workspaceRoot 'README-git-helpers.md'))) {
-        Copy-Item -Path (Join-Path $repoRoot 'git-helpers\README.md') -Destination (Join-Path $workspaceRoot 'README-git-helpers.md')
+        if (-not (Test-Path (Join-Path $workspaceRoot 'README-git-helpers.md'))) {
+            Copy-Item -Path (Join-Path $repoRoot 'git-helpers\README.md') -Destination (Join-Path $workspaceRoot 'README-git-helpers.md')
+        }
+
+        if ($supportsAgenticCli) {
+            Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\CLAUDE.md') -Destination (Join-Path $workspaceRoot 'CLAUDE.md') -Force
+            Write-LabLog 'Synced CLAUDE.md (local Claude Code CLI governance) into the workspace.' -Level Success
+        }
+    }
+    else {
+        Write-LabLog 'Purpose=General - skipping the AutoLISP-specific workspace bootstrap (.continue/rules, .scaffold-template, README-git-helpers.md, CLAUDE.md). The git workspace itself is still set up for save/undo.' -Level Info
+        $skipped += 'AutoLISP workspace bootstrap (rules/scaffold/README/CLAUDE.md) - Purpose=General'
     }
 
-    if ($supportsAgenticCli) {
-        Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\CLAUDE.md') -Destination (Join-Path $workspaceRoot 'CLAUDE.md') -Force
-        Write-LabLog 'Synced CLAUDE.md (local Claude Code CLI governance) into the workspace.' -Level Success
-    }
-
-    # `git log -1` on a brand-new repo exits non-zero and writes to stderr,
-    # which PowerShell 7.3+ can turn into a terminating error even though
-    # this is an expected, normal outcome here - catch and ignore it, we
-    # only care about $LASTEXITCODE.
-    try { git log -1 2>&1 | Out-Null } catch { }
-    if ($LASTEXITCODE -ne 0) {
-        git add -A | Out-Null
-        git commit -m 'Set up lab workspace (governance rules + scaffold template)' | Out-Null
-        Write-LabLog 'Made the initial workspace commit.' -Level Success
+    if ($gitAvailable) {
+        # `git log -1` on a brand-new repo exits non-zero and writes to stderr,
+        # which PowerShell 7.3+ can turn into a terminating error even though
+        # this is an expected, normal outcome here - catch and ignore it, we
+        # only care about $LASTEXITCODE.
+        try { git log -1 2>&1 | Out-Null } catch { }
+        if ($LASTEXITCODE -ne 0) {
+            git add -A | Out-Null
+            git commit -m 'Set up lab workspace' | Out-Null
+            Write-LabLog 'Made the initial workspace commit.' -Level Success
+        }
     }
 }
 finally {
@@ -440,13 +525,18 @@ $shellTargets = @(
     @{ Name = 'PowerShell 7+';          ModulesDir = Join-Path $HOME 'Documents\PowerShell\Modules';          ProfilePath = Join-Path $HOME 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1' }
 )
 
-try {
-    & (Join-Path $repoRoot 'git-helpers\git-aliases.ps1') | Out-Null
-    $installed += 'Portable git save/undo aliases'
+if ($gitAvailable) {
+    try {
+        & (Join-Path $repoRoot 'git-helpers\git-aliases.ps1') | Out-Null
+        $installed += 'Portable git save/undo aliases'
+    }
+    catch {
+        Write-LabLog "Could not install portable git aliases: $($_.Exception.Message)" -Level Warn
+        $failed += 'Portable git save/undo aliases'
+    }
 }
-catch {
-    Write-LabLog "Could not install portable git aliases: $($_.Exception.Message)" -Level Warn
-    $failed += 'Portable git save/undo aliases'
+else {
+    $skipped += 'Portable git save/undo aliases (git not available)'
 }
 
 foreach ($target in $shellTargets) {
@@ -497,12 +587,18 @@ foreach ($target in $shellTargets) {
         }
     }
 
+    # $scaffoldTemplateDir is only assigned in Step 8 when
+    # $effectivePurpose -eq 'Lisp' - guard it the same way
+    # $localClaudeImportLine already is, rather than writing an empty
+    # LAB_SCAFFOLD_TEMPLATE for a folder that was never created.
+    $scaffoldEnvLine = if ($effectivePurpose -eq 'Lisp') { "`$env:LAB_SCAFFOLD_TEMPLATE = '$scaffoldTemplateDir'" } else { '' }
+
     $profileBlockStart = '# LabSession-Helpers-Start'
     $profileBlockEnd   = '# LabSession-Helpers-End'
     $profileBlock = @"
 $profileBlockStart
 `$env:LAB_WORKSPACE_ROOT = '$workspaceRoot'
-`$env:LAB_SCAFFOLD_TEMPLATE = '$scaffoldTemplateDir'
+$scaffoldEnvLine
 Import-Module LabGitHelpers
 Import-Module ContinueProviders
 $localClaudeImportLine
@@ -548,6 +644,9 @@ if ($qualityModel) {
     Write-Host "Quality model (opt-in, slower): $qualityModel - switch with 'quality-model' / back with 'fast-model'"
 }
 Write-Host "Claude Code CLI (local, optional): $(if ($supportsAgenticCli) { "enabled - run 'claude-local' in a new shell" } else { 'not offered on this VM tier' })"
+if ($supportsAgenticCli) {
+    Write-Host "Pulled something else with 'ollama pull'? Run 'switch-model' in a new shell to pick from any locally pulled model, not just fast/quality."
+}
 Write-Host "Continue.dev provider picker: run 'continue-provider' in a new shell to add your own Anthropic/OpenAI/Gemini/custom-OpenAI-compatible model alongside the free local one."
 if ($TakeHome -and $supportsAgenticCli) {
     Write-Host "Gateway mode (experimental): run 'gateway-mode' in a new shell to point the Claude Code CLI at a non-Anthropic backend via a local LiteLLM proxy - see claude-code-config/README.md."

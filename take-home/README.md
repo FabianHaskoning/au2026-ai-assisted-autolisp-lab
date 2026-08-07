@@ -19,7 +19,16 @@ git clone https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
   workspace lands under `$HOME\LabWork` instead of `C:\LabWork`, a missing
   AutoCAD/Civil 3D install is a warning instead of a failure, and any
   Continue.dev config you already have is merged into rather than
-  overwritten.
+  overwritten. Ollama and the Claude Code CLI are always installed - that's
+  the point - but it'll ask you three quick questions first: whether to
+  install Git for Windows too, whether to install VS Code + Continue.dev
+  too (say no if you only want the Claude Code CLI), and whether you're
+  actually here to write AutoLISP routines (say no and it skips copying the
+  AutoCAD-specific `CLAUDE.md`/scaffold/rules into your workspace). Answer
+  ahead of time instead of being asked with `-SkipGit`, `-SkipVSCode`,
+  `-Purpose Lisp`/`-Purpose General`, and skip the questions entirely with
+  `-NonInteractive` (defaults to "yes to everything" for anything you
+  didn't pass explicitly - useful for a repeatable/scripted run).
 - **Mac/Linux**: no automated script - follow
   [`mac-linux-setup.md`](mac-linux-setup.md) (a handful of commands, same
   end result for the VS Code + Continue.dev workflow).
@@ -42,6 +51,9 @@ better:
 
 - **Claude.ai / Anthropic account**: run `cloud-mode` to switch the Claude
   Code CLI to your own account. Switch back with `local-mode`.
+- **Pulled a different local model yourself with `ollama pull`**: run
+  `switch-model` to pick from any locally pulled model, not just the
+  `fast-model`/`quality-model` pair this VM's tier recommends.
 - **ChatGPT/OpenAI, Google Gemini, or an OpenAI-compatible service like
   Kimi/Moonshot, inside Continue.dev**: run `continue-provider` (see
   [`continue-config/README.md`](../continue-config/README.md)) to add it

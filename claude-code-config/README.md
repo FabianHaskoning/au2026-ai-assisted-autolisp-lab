@@ -17,6 +17,7 @@ Installed by `Provision-LabVM.ps1` on VM tiers that support it (see below):
 | `claude-local` | Runs `claude` with the local Ollama model, one-off, regardless of the persistent settings below. |
 | `fast-model` | Switches Claude Code + Continue.dev to the fast default model. |
 | `quality-model` | Switches Claude Code + Continue.dev to the bigger, slower, higher-quality model. |
+| `switch-model` | Switches Claude Code + Continue.dev to any locally pulled Ollama model, not just the fast/quality pair - lists what's pulled and lets you pick, or pass `-Model <tag>` directly. |
 | `cloud-mode` | Switches Claude Code (not Continue.dev) to Anthropic's real cloud API - for anyone with, or willing to sign up for, their own account. |
 | `local-mode` | Switches Claude Code back to the local Ollama model. |
 | `gateway-mode` | **Experimental, take-home only.** Switches Claude Code to a non-Anthropic backend (OpenAI, Gemini, or a custom OpenAI-compatible endpoint like Kimi) via a local LiteLLM proxy. See "Gateway mode (experimental)" below. |
@@ -97,6 +98,9 @@ pre-pulled by `Provision-LabVM.ps1` so switching is instant, no surprise
 multi-GB download mid-session. Only VMs on the top hardware tier get either
 (see `provisioning/config/model-decision-table.psd1`) - lower tiers stick to
 Continue.dev chat/edit only.
+
+Pulled something else entirely with `ollama pull` yourself? `switch-model`
+picks from anything locally pulled, not just this fast/quality pair.
 
 ## Using a real Anthropic account instead
 
