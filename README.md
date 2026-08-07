@@ -31,9 +31,11 @@ separately, not part of the generic scaffold itself.
 | [`git-helpers/`](git-helpers/) | PowerShell module + plain git aliases that make branch-per-routine / commit-often nearly automatic. |
 | [`examples/`](examples/) | Worked-example AutoLISP routines (Eigendomskaart/cadastral data processing), contributed separately. |
 | [`facilitator/`](facilitator/) | Operational guide for the presenter and the two LAB assistants. |
+| [`take-home/`](take-home/) | Running this same setup on an attendee's own PC, during the session or afterward. |
 
 ## Where to start
 
 - Setting up or re-testing the VM template: [`provisioning/`](provisioning/), starting with `Test-LabVMSpecs.ps1`.
 - Understanding what the local model has been told: [`continue-config/rules/`](continue-config/rules/) and, for the optional CLI path, [`claude-code-config/`](claude-code-config/).
 - Running the session: [`facilitator/README.md`](facilitator/README.md).
+- Taking it home, or bringing your own AI account (Claude/ChatGPT/Gemini/Kimi/Copilot): [`take-home/README.md`](take-home/README.md).

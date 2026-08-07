@@ -22,3 +22,17 @@ Ordered roughly by how often they're likely to come up.
 | `git branch -D <name>` says "branch not found" | Run from the wrong repo - `New-Routine`/branches live in `$env:LAB_WORKSPACE_ROOT` (`C:\LabWork` by default), not the staging repo clone folder | `cd C:\LabWork` (or wherever `$env:LAB_WORKSPACE_ROOT` points) first, then delete the branch. |
 | VS Code Claude Code panel still shows an Anthropic sign-in screen | `claudeCode.disableLoginPrompt` didn't get set, or VS Code was already open when `Provision-LabVM.ps1` ran | Check VS Code settings (`Ctrl+,`) → Extensions → Claude Code → **Disable Login Prompt** is checked; if not, re-run `Provision-LabVM.ps1` then reload the VS Code window (**Developer: Reload Window**). |
 | VS Code Claude Code panel signs in fine but doesn't use the local model | `~/.claude/settings.json` wasn't written (parse error on an existing file - check the provisioning log for a warning) | Open `~/.claude/settings.json` and confirm the `env`/`model` keys from `claude-code-config/README.md` are present; add them manually if the file had to be skipped. |
+
+## Take-home / advanced (optional)
+
+These only come up on a personal machine (`-TakeHome`) or with the
+provider-picker/gateway features - not on the standard lab VM flow.
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| `Provision-LabVM.ps1 -TakeHome` opens a UAC prompt / a second window | Expected - the script relaunches itself elevated when not already running as admin, since a personal PC is less likely to already be in an elevated shell | Approve the UAC prompt; the original window can be closed once the elevated one finishes. |
+| `continue-provider` says "no API key given - aborting" | The `Read-Host -AsSecureString` prompt was skipped or empty (e.g. piped/non-interactive shell) | Re-run interactively, or pass `-ApiKey` directly. |
+| A hand-edited `~/.continue/config.yaml` looks corrupted after `continue-provider` or take-home provisioning runs again | The `# LabSession-Provider-*-Start/-End` (or `-Ollama-Start/-End`) marker block got partially hand-edited, breaking the automatic block-replace | Delete the affected marked block manually (including both marker comment lines), then re-run `continue-provider` or `Provision-LabVM.ps1 -TakeHome` to regenerate it. Content outside marker blocks is never touched. |
+| `gateway-mode` fails with "requires Python 3.9+" or "requires the litellm\[proxy\] package" | Expected - `gateway-mode` is experimental and never installs its own Python dependency | Follow the exact command the error prints (`pip install 'litellm[proxy]'`), then retry. This is why it's opt-in, not part of default provisioning. |
+| `gateway-mode` says the gateway didn't respond within 10s | Port already in use, LiteLLM slow to start, or a firewall prompt waiting for a response | Check the LiteLLM window it opened; try a different `-Port`; approve any Windows Firewall prompt for Python. |
+| `claude-local`/`claude` works, then stops working after a reboot (in gateway-mode) | The LiteLLM proxy process doesn't survive a restart on its own | Re-run `gateway-mode` (same backend/model) after rebooting, or switch to `local-mode`/`cloud-mode` if you don't need it every session. |

@@ -17,12 +17,26 @@
     to that VM is still being confirmed. Run this on a local test VM
     first, or hand it to whoever ends up provisioning the real one.
 
+    Pass -TakeHome when running this on an attendee's own Windows PC
+    instead of the disposable lab VM: elevation is requested rather than
+    required outright, the workspace defaults under the user's own
+    profile instead of C:\, a missing AutoCAD/Civil 3D install is a
+    warning rather than a hard failure, and any pre-existing
+    ~/.continue/config.yaml is merged into rather than overwritten. See
+    take-home/README.md.
+
     .EXAMPLE
     .\Provision-LabVM.ps1
+
+    .EXAMPLE
+    .\Provision-LabVM.ps1 -TakeHome
 #>
 
 [CmdletBinding()]
-param()
+param(
+    [switch]$TakeHome,
+    [string]$WorkspaceRootOverride
+)
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
@@ -42,6 +56,13 @@ $needsNewShell = @()
 # --- Elevation check ---------------------------------------------------------
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
+    if ($TakeHome) {
+        Write-LabLog 'Take-home mode: not running elevated - relaunching an elevated PowerShell window for the winget installs (you may see a UAC prompt)...' -Level Warn
+        $relaunchArgs = @('-NoExit', '-File', "`"$PSCommandPath`"", '-TakeHome')
+        if ($WorkspaceRootOverride) { $relaunchArgs += @('-WorkspaceRootOverride', "`"$WorkspaceRootOverride`"") }
+        Start-Process -FilePath (Get-Process -Id $PID).Path -Verb RunAs -ArgumentList $relaunchArgs
+        return
+    }
     Write-LabLog 'This script needs to run elevated (Run as Administrator) for winget installs. Re-launch PowerShell as Administrator.' -Level Error
     return
 }
@@ -83,7 +104,7 @@ Install-ViaWinget -DisplayName 'Ollama'          -WingetId 'Ollama.Ollama' -Comm
 
 # --- Step 2: decide which model this VM should run ----------------------------
 Write-LabLog 'Running hardware diagnostics to choose a model...' -Level Info
-$specs = & (Join-Path $PSScriptRoot 'Test-LabVMSpecs.ps1')
+$specs = & (Join-Path $PSScriptRoot 'Test-LabVMSpecs.ps1') -TakeHome:$TakeHome
 
 if ($config.ModelOverride) {
     $chatModel = $config.ModelOverride
@@ -303,17 +324,56 @@ if ($supportsAgenticCli) {
 # --- Step 7: render the Continue.dev model config (machine-wide) --------------
 $continueGlobalDir = Join-Path $HOME '.continue'
 if (-not (Test-Path $continueGlobalDir)) { New-Item -ItemType Directory -Path $continueGlobalDir -Force | Out-Null }
-$templatePath = Join-Path $repoRoot 'continue-config\config.yaml.template'
-$renderedConfig = (Get-Content -Path $templatePath -Raw) `
-    -replace '\{\{OLLAMA_CHAT_MODEL\}\}', $chatModel `
-    -replace '\{\{OLLAMA_AUTOCOMPLETE_MODEL\}\}', $autocompleteModel
 $configOutPath = Join-Path $continueGlobalDir 'config.yaml'
-Set-Content -Path $configOutPath -Value $renderedConfig -Encoding UTF8
-Write-LabLog "Wrote Continue.dev config to $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel)" -Level Success
+
+if ($TakeHome) {
+    # A personal machine may already have its own Continue.dev config (its
+    # own providers, models, or settings) - merge our Ollama block into it
+    # via the same marker-block pattern used for the $PROFILE block below,
+    # instead of the lab VM's unconditional overwrite. Ollama stays the
+    # free fallback; continue-provider (see continue-config/) can add other
+    # providers alongside it without disturbing this block.
+    Import-Module (Join-Path $repoRoot 'continue-config\ContinueConfigHelpers.psm1') -Force
+    $ollamaBlockContent = @(
+        '  - name: Lab Assistant (Ollama)'
+        '    provider: ollama'
+        "    model: `"$chatModel`""
+        '    apiBase: http://localhost:11434'
+        '    roles:'
+        '      - chat'
+        '      - edit'
+        ''
+        '  - name: Autocomplete (Ollama)'
+        '    provider: ollama'
+        "    model: `"$autocompleteModel`""
+        '    apiBase: http://localhost:11434'
+        '    roles:'
+        '      - autocomplete'
+    )
+    Set-ContinueConfigBlock -BlockId 'Ollama' -Content $ollamaBlockContent -ParentKey 'models' -Path $configOutPath
+    Write-LabLog "Merged the local-Ollama block into $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel) - any other content in that file was left untouched." -Level Success
+}
+else {
+    $templatePath = Join-Path $repoRoot 'continue-config\config.yaml.template'
+    $renderedConfig = (Get-Content -Path $templatePath -Raw) `
+        -replace '\{\{OLLAMA_CHAT_MODEL\}\}', $chatModel `
+        -replace '\{\{OLLAMA_AUTOCOMPLETE_MODEL\}\}', $autocompleteModel
+    Set-Content -Path $configOutPath -Value $renderedConfig -Encoding UTF8
+    Write-LabLog "Wrote Continue.dev config to $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel)" -Level Success
+}
 $installed += 'Continue.dev config.yaml'
 
 # --- Step 8: bootstrap the attendee workspace ----------------------------------
-$workspaceRoot = $config.WorkspaceRoot
+$workspaceRoot = if ($WorkspaceRootOverride) {
+    $WorkspaceRootOverride
+}
+elseif ($TakeHome) {
+    # Avoid requiring write access to C:\ root on a personal machine.
+    Join-Path $HOME 'LabWork'
+}
+else {
+    $config.WorkspaceRoot
+}
 if (-not (Test-Path $workspaceRoot)) {
     New-Item -ItemType Directory -Path $workspaceRoot -Force | Out-Null
     Write-LabLog "Created workspace at $workspaceRoot" -Level Info
@@ -395,6 +455,16 @@ foreach ($target in $shellTargets) {
     Copy-Item -Path (Join-Path $repoRoot 'git-helpers\LabGitHelpers.psm1') -Destination $labModuleDir -Force
     $installed += "LabGitHelpers module ($($target.Name))"
 
+    # ContinueProviders (continue-provider) lets an attendee add their own
+    # Anthropic/OpenAI/Gemini/custom-OpenAI-compatible model into
+    # Continue.dev alongside the free local Ollama default - offered on
+    # every tier, since it only needs Continue.dev, not the agentic CLI.
+    $continueProvidersModuleDir = Join-Path $target.ModulesDir 'ContinueProviders'
+    New-Item -ItemType Directory -Path $continueProvidersModuleDir -Force | Out-Null
+    Copy-Item -Path (Join-Path $repoRoot 'continue-config\ContinueProviders.psm1') -Destination $continueProvidersModuleDir -Force
+    Copy-Item -Path (Join-Path $repoRoot 'continue-config\ContinueConfigHelpers.psm1') -Destination $continueProvidersModuleDir -Force
+    $installed += "ContinueProviders module - continue-provider ($($target.Name))"
+
     # LAB_AGENT_MODEL_FAST/_QUALITY are static facts about this VM's tier
     # (safe to re-set on every new shell). The CURRENTLY SELECTED model is
     # mutable state, not a fact - its source of truth is
@@ -406,8 +476,25 @@ foreach ($target in $shellTargets) {
         $localClaudeModuleDir = Join-Path $target.ModulesDir 'LocalClaude'
         New-Item -ItemType Directory -Path $localClaudeModuleDir -Force | Out-Null
         Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\LocalClaude.psm1') -Destination $localClaudeModuleDir -Force
+        Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\ClaudeSettingsHelpers.psm1') -Destination $localClaudeModuleDir -Force
+        Copy-Item -Path (Join-Path $repoRoot 'continue-config\ContinueConfigHelpers.psm1') -Destination $localClaudeModuleDir -Force
         $installed += "LocalClaude module - claude-local/fast-model/quality-model/cloud-mode/local-mode ($($target.Name))"
         $localClaudeImportLine = "`$env:LAB_AGENT_MODEL_FAST = '$chatModel'`n`$env:LAB_AGENT_MODEL_QUALITY = '$qualityModel'`nImport-Module LocalClaude"
+
+        # Gateway mode (experimental, take-home only): lets the Claude Code
+        # CLI itself reach a non-Anthropic backend via a local LiteLLM
+        # proxy. Never installed on the disposable lab VM - it's an extra
+        # Python dependency and background process, not validated at
+        # 60-90-attendee scale. See claude-code-config/README.md.
+        if ($TakeHome) {
+            $liteLLMGatewayModuleDir = Join-Path $target.ModulesDir 'LiteLLMGateway'
+            New-Item -ItemType Directory -Path $liteLLMGatewayModuleDir -Force | Out-Null
+            Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\LiteLLMGateway.psm1') -Destination $liteLLMGatewayModuleDir -Force
+            Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\ClaudeSettingsHelpers.psm1') -Destination $liteLLMGatewayModuleDir -Force
+            Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\litellm-config.yaml.template') -Destination $liteLLMGatewayModuleDir -Force
+            $installed += "LiteLLMGateway module - gateway-mode, experimental ($($target.Name))"
+            $localClaudeImportLine += "`nImport-Module LiteLLMGateway"
+        }
     }
 
     $profileBlockStart = '# LabSession-Helpers-Start'
@@ -417,6 +504,7 @@ $profileBlockStart
 `$env:LAB_WORKSPACE_ROOT = '$workspaceRoot'
 `$env:LAB_SCAFFOLD_TEMPLATE = '$scaffoldTemplateDir'
 Import-Module LabGitHelpers
+Import-Module ContinueProviders
 $localClaudeImportLine
 $profileBlockEnd
 "@
@@ -460,6 +548,10 @@ if ($qualityModel) {
     Write-Host "Quality model (opt-in, slower): $qualityModel - switch with 'quality-model' / back with 'fast-model'"
 }
 Write-Host "Claude Code CLI (local, optional): $(if ($supportsAgenticCli) { "enabled - run 'claude-local' in a new shell" } else { 'not offered on this VM tier' })"
+Write-Host "Continue.dev provider picker: run 'continue-provider' in a new shell to add your own Anthropic/OpenAI/Gemini/custom-OpenAI-compatible model alongside the free local one."
+if ($TakeHome -and $supportsAgenticCli) {
+    Write-Host "Gateway mode (experimental): run 'gateway-mode' in a new shell to point the Claude Code CLI at a non-Anthropic backend via a local LiteLLM proxy - see claude-code-config/README.md."
+}
 Write-Host "Installed:     $($installed -join ', ')"
 Write-Host "Skipped:       $($skipped -join ', ')"
 if ($needsNewShell.Count -gt 0) {

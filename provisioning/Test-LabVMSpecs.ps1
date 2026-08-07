@@ -11,12 +11,21 @@
     $env:ProgramData\LabSession\diagnostics\ so a facilitator can
     screenshot or archive it.
 
+    Pass -TakeHome when checking an attendee's own PC instead of the lab
+    VM: a missing AutoCAD/Civil 3D install becomes a warning instead of a
+    hard failure, since a personal machine legitimately may not have it.
+
     .EXAMPLE
     .\Test-LabVMSpecs.ps1
+
+    .EXAMPLE
+    .\Test-LabVMSpecs.ps1 -TakeHome
 #>
 
 [CmdletBinding()]
-param()
+param(
+    [switch]$TakeHome
+)
 
 . (Join-Path $PSScriptRoot 'lib\Common.ps1')
 . (Join-Path $PSScriptRoot 'lib\ModelDecision.ps1')
@@ -127,8 +136,14 @@ function Test-AutodeskProductInstalled {
 
 $results.AutoCADDetected  = Test-AutodeskProductInstalled -NameMatch 'AutoCAD 2026'
 $results.Civil3DDetected  = Test-AutodeskProductInstalled -NameMatch 'Civil 3D 2026'
-if (-not $results.AutoCADDetected) { $failures += 'AutoCAD 2026 not detected via registry - confirm this is the correct lab VM image.' }
-if (-not $results.Civil3DDetected) { $failures += 'Civil 3D 2026 not detected via registry - confirm this is the correct lab VM image.' }
+if (-not $results.AutoCADDetected) {
+    if ($TakeHome) { $warnings += 'AutoCAD 2026 not detected - expected on a personal take-home machine. The AI-assisted AutoLISP workflow still works; you just cannot load/test routines in AutoCAD here.' }
+    else { $failures += 'AutoCAD 2026 not detected via registry - confirm this is the correct lab VM image.' }
+}
+if (-not $results.Civil3DDetected) {
+    if ($TakeHome) { $warnings += 'Civil 3D 2026 not detected - expected on a personal take-home machine.' }
+    else { $failures += 'Civil 3D 2026 not detected via registry - confirm this is the correct lab VM image.' }
+}
 
 # --- Model recommendation ---------------------------------------------------
 $recommendation = Get-RecommendedOllamaModel -RamGB $totalRamGB -HasDedicatedGpu $hasDedicatedGpu -VramGB $vramGB

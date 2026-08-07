@@ -1,9 +1,10 @@
 <#
     LocalClaude - launches the real Claude Code CLI pointed at a local
     Ollama model instead of Anthropic's cloud API, and lets an attendee
-    switch between a fast/quality local model or a real Anthropic account.
-    Optional/advanced path, see claude-code-config/README.md and
-    claude-code-config/CLAUDE.md.
+    switch between a fast/quality local model, a real Anthropic account,
+    or (experimental) a LiteLLM gateway to a non-Anthropic backend - see
+    gateway-mode in LiteLLMGateway.psm1. Optional/advanced path, see
+    claude-code-config/README.md and claude-code-config/CLAUDE.md.
 
     LAB_AGENT_MODEL_FAST / LAB_AGENT_MODEL_QUALITY are static facts about
     this VM's hardware tier, set once by Provision-LabVM.ps1 and safe to
@@ -11,42 +12,29 @@
     state, not a fact - its source of truth is ~/.claude/settings.json's
     "model" field, which Set-LabModel updates and a new shell must not
     silently reset.
+
+    JSON settings helpers live in ClaudeSettingsHelpers.psm1 (shared with
+    LiteLLMGateway.psm1's gateway-mode) so all three modes mutate
+    ~/.claude/settings.json through one tested code path. Continue.dev
+    config helpers live in ContinueConfigHelpers.psm1 (shared with
+    ContinueProviders.psm1's continue-provider).
 #>
 
-function Get-ClaudeSettingsPath { Join-Path $HOME '.claude\settings.json' }
-function Get-VSCodeSettingsPath { Join-Path $env:APPDATA 'Code\User\settings.json' }
-function Get-ContinueConfigPath { Join-Path $HOME '.continue\config.yaml' }
+Import-Module (Join-Path $PSScriptRoot 'ClaudeSettingsHelpers.psm1') -Force
 
-function Get-JsonFileSettings {
-    param([Parameter(Mandatory)][string]$Path)
-    if (-not (Test-Path $Path)) { return [PSCustomObject]@{} }
-    try { return (Get-Content -Path $Path -Raw | ConvertFrom-Json) }
-    catch {
-        Write-Warning "Could not parse $Path as JSON - leaving it untouched."
-        return $null
-    }
+# Provisioning copies ContinueConfigHelpers.psm1 alongside this file into
+# the installed module folder (see Provision-LabVM.ps1 Steps 9-10), but in
+# the source repo it lives in the sibling continue-config/ folder instead -
+# resolve whichever location actually has it.
+$continueConfigHelpersPath = Join-Path $PSScriptRoot 'ContinueConfigHelpers.psm1'
+if (-not (Test-Path $continueConfigHelpersPath)) {
+    $continueConfigHelpersPath = Join-Path $PSScriptRoot '..\continue-config\ContinueConfigHelpers.psm1'
 }
-
-function Save-JsonFileSettings {
-    param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)]$Settings)
-    $dir = Split-Path -Parent $Path
-    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    $Settings | ConvertTo-Json -Depth 10 | Set-Content -Path $Path -Encoding UTF8
-}
-
-function Set-JsonProperty {
-    param($Object, [string]$Name, $Value)
-    if ($Object.PSObject.Properties.Name -contains $Name) { $Object.$Name = $Value }
-    else { $Object | Add-Member -NotePropertyName $Name -NotePropertyValue $Value }
-}
-
-function Remove-JsonProperty {
-    param($Object, [string]$Name)
-    if ($Object.PSObject.Properties.Name -contains $Name) { $Object.PSObject.Properties.Remove($Name) }
-}
+Import-Module $continueConfigHelpersPath -Force
 
 function Get-CurrentAgentModel {
-    $settings = Get-JsonFileSettings -Path (Get-ClaudeSettingsPath)
+    param([string]$Root = $HOME)
+    $settings = Get-JsonFileSettings -Path (Get-ClaudeSettingsPath -Root $Root)
     if ($settings -and $settings.PSObject.Properties.Name -contains 'model' -and $settings.model) {
         return $settings.model
     }
@@ -106,7 +94,8 @@ function Set-LabModel {
         quality-model
     #>
     param(
-        [Parameter(Mandatory)][ValidateSet('Fast', 'Quality')][string]$Tier
+        [Parameter(Mandatory)][ValidateSet('Fast', 'Quality')][string]$Tier,
+        [string]$Root = $HOME
     )
 
     $model = if ($Tier -eq 'Fast') { $env:LAB_AGENT_MODEL_FAST } else { $env:LAB_AGENT_MODEL_QUALITY }
@@ -121,14 +110,14 @@ function Set-LabModel {
         & ollama pull $model
     }
 
-    $claudeSettingsPath = Get-ClaudeSettingsPath
+    $claudeSettingsPath = Get-ClaudeSettingsPath -Root $Root
     $settings = Get-JsonFileSettings -Path $claudeSettingsPath
     if ($settings) {
         Set-JsonProperty -Object $settings -Name 'model' -Value $model
         Save-JsonFileSettings -Path $claudeSettingsPath -Settings $settings
     }
 
-    $continueConfigPath = Get-ContinueConfigPath
+    $continueConfigPath = Get-ContinueConfigPath -Root $Root
     if (Test-Path $continueConfigPath) {
         $content = Get-Content -Path $continueConfigPath -Raw
         $updated = $content -replace '(name: Lab Assistant \(Ollama\)[\s\S]*?model: )"[^"]*"', "`$1`"$model`""
@@ -152,7 +141,9 @@ function Enable-CloudClaude {
         .EXAMPLE
         cloud-mode
     #>
-    $claudeSettingsPath = Get-ClaudeSettingsPath
+    param([string]$Root = $HOME)
+
+    $claudeSettingsPath = Get-ClaudeSettingsPath -Root $Root
     $settings = Get-JsonFileSettings -Path $claudeSettingsPath
     if ($settings -and ($settings.PSObject.Properties.Name -contains 'env')) {
         foreach ($key in @('ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL')) {
@@ -182,7 +173,9 @@ function Enable-LocalClaude {
         .EXAMPLE
         local-mode
     #>
-    $claudeSettingsPath = Get-ClaudeSettingsPath
+    param([string]$Root = $HOME)
+
+    $claudeSettingsPath = Get-ClaudeSettingsPath -Root $Root
     $settings = Get-JsonFileSettings -Path $claudeSettingsPath
     if ($settings) {
         if (-not ($settings.PSObject.Properties.Name -contains 'env')) {

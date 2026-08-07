@@ -1,0 +1,27 @@
+# LiteLLM proxy configuration template - renders into
+# ~/.claude-lab/litellm-config.yaml by Install-LiteLLMGatewayConfig
+# (LiteLLMGateway.psm1). NOT read directly by anything - this is a
+# template, edit claude-code-config/litellm-config.yaml.template to
+# change what gets generated, not a rendered output file.
+#
+# LiteLLM exposes an Anthropic-Messages-API-compatible /v1/messages
+# endpoint locally and translates to whatever backend is listed below -
+# this is what lets the real Claude Code CLI itself (not just Continue.dev)
+# reach a non-Anthropic backend, via the same ANTHROPIC_BASE_URL mechanism
+# already used to reach local Ollama. See claude-code-config/README.md's
+# "Gateway mode (experimental)" section.
+
+model_list:
+  - model_name: ollama-fallback
+    litellm_params:
+      model: ollama/{{OLLAMA_CHAT_MODEL}}
+      api_base: http://localhost:11434
+
+  - model_name: {{BACKEND_MODEL_NAME}}
+    litellm_params:
+      model: {{BACKEND_LITELLM_MODEL}}
+      api_key: {{BACKEND_API_KEY}}
+{{BACKEND_API_BASE_LINE}}
+
+general_settings:
+  master_key: {{LITELLM_MASTER_KEY}}

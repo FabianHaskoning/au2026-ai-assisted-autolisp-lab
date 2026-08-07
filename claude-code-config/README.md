@@ -19,6 +19,7 @@ Installed by `Provision-LabVM.ps1` on VM tiers that support it (see below):
 | `quality-model` | Switches Claude Code + Continue.dev to the bigger, slower, higher-quality model. |
 | `cloud-mode` | Switches Claude Code (not Continue.dev) to Anthropic's real cloud API - for anyone with, or willing to sign up for, their own account. |
 | `local-mode` | Switches Claude Code back to the local Ollama model. |
+| `gateway-mode` | **Experimental, take-home only.** Switches Claude Code to a non-Anthropic backend (OpenAI, Gemini, or a custom OpenAI-compatible endpoint like Kimi) via a local LiteLLM proxy. See "Gateway mode (experimental)" below. |
 
 ## How it works
 
@@ -116,6 +117,47 @@ accounts appear from one place at once, and $5 doesn't go far for agentic
 usage). `cloud-mode` makes it available to anyone who wants to try anyway,
 without the environment forcing everyone through it.
 
+## Gateway mode (experimental)
+
+`local-mode`/`cloud-mode` cover local-Ollama vs. a real Anthropic account.
+Some attendees will have a ChatGPT, Gemini, or Kimi/Moonshot account
+instead and want the Claude Code CLI itself - not just Continue.dev - to
+use it. That's a harder problem: Claude Code only speaks Anthropic's
+Messages API, and OpenAI/Gemini/Kimi don't speak that natively, so
+reaching them needs a translating proxy in between.
+
+[LiteLLM](https://docs.litellm.ai/docs/tutorials/claude_non_anthropic_models)
+is a mature, actively documented option for exactly this: it exposes a
+local endpoint that speaks the Anthropic Messages API and translates to
+whatever backend you point it at. `gateway-mode` (in
+`claude-code-config/LiteLLMGateway.psm1`) automates it:
+
+```powershell
+gateway-mode -Backend OpenAI -Model gpt-4.1
+gateway-mode -Backend CustomOpenAICompatible -Model kimi-k2 -ApiBase https://api.moonshot.ai/v1
+```
+
+This checks for Python + `litellm[proxy]` (installs neither for you -
+error message tells you the one `pip install` command to run), renders a
+LiteLLM config from `claude-code-config/litellm-config.yaml.template`,
+starts the proxy, and points `~/.claude/settings.json` at it - the exact
+same `env` block mechanism `local-mode`/`cloud-mode` already use, so
+switching modes stays mutually exclusive.
+
+**Why this is opt-in and take-home-only, not part of the default
+provisioning flow**: it's a real new dependency (Python, a package
+install, a background process that has to keep running and doesn't
+survive a reboot on its own) this repo has never needed before, and it
+hasn't been validated at 60-90-attendee scale the way `local-mode`/
+`cloud-mode` have on the real lab VM. `Provision-LabVM.ps1` never installs
+Python or litellm, even under `-TakeHome` - the check only runs, and only
+fails loudly with next steps, when you actually call `gateway-mode`.
+
+If all you need is a different model inside **Continue.dev** (not the
+Claude Code CLI), `continue-provider` in `continue-config/` is simpler and
+doesn't need Python at all - see
+[`continue-config/README.md`](../continue-config/README.md).
+
 ## Performance expectations
 
 Even on the fast model, this is a local, CPU/GPU-bound assistant, not a
@@ -128,3 +170,6 @@ prompts to work well within it.
 Nothing here is specific to this lab. Any machine with Ollama installed and
 a tool-calling-capable model pulled can run real Claude Code the same way -
 just those three environment variables, no lab infrastructure required.
+`provisioning\Provision-LabVM.ps1 -TakeHome` automates all of this
+(including `gateway-mode`'s module) on a personal Windows PC - see
+[`take-home/README.md`](../take-home/README.md).

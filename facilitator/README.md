@@ -83,6 +83,19 @@ during the live 90 minutes. `SkipOllamaPull` in
 for testing without re-pulling once the model is already cached in the
 image.
 
+## Take-home / bring-your-own-account (optional)
+
+Attendees can run this same setup on their own PC afterward (or during the
+session, if they brought a laptop) - see
+[`take-home/README.md`](../take-home/README.md), which covers the
+`-TakeHome` flag on `Provision-LabVM.ps1`, the Mac/Linux manual path, and
+how to plug in a Claude/ChatGPT/Gemini/Kimi/Copilot account someone already
+has instead of the free local model. A facilitator can also use `-TakeHome`
+for a quick local dry-run of a change (e.g. `.\provisioning\
+Provision-LabVM.ps1 -TakeHome -WorkspaceRootOverride C:\Scratch\LabWork`)
+without needing to be on the actual lab VM. None of this changes what the
+default lab-VM provisioning run (no `-TakeHome`) does.
+
 ## Out of scope for this document
 
 Curriculum content, exercise pacing, and how the beginner/experienced
