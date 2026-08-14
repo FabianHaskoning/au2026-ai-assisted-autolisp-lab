@@ -41,7 +41,7 @@
 param(
     [string]$OutputDirectory,
     [switch]$SkipGeneration,
-    [int]$GenerationTimeoutSeconds = 180
+    [int]$GenerationTimeoutSeconds = 120
 )
 
 $ErrorActionPreference = 'Stop'
@@ -170,29 +170,67 @@ Invoke-Check 'Model generates a response' {
         Add-Check -Name 'Model generates a response' -Status WARN -Detail 'No chat model determined - skipped.'
         return
     }
-    $body = @{
-        model  = $expectedChatModel
-        prompt = 'Reply with exactly one short sentence: what does the AutoLISP function princ do?'
-        stream = $false
-    } | ConvertTo-Json
+    $prompt = 'Reply with exactly one short sentence: what does the AutoLISP function princ do?'
 
-    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-    $reply = Invoke-RestMethod -Uri "$ollamaApi/api/generate" -Method Post -Body $body -ContentType 'application/json' -TimeoutSec $GenerationTimeoutSeconds
-    $stopwatch.Stop()
-    $seconds = [math]::Round($stopwatch.Elapsed.TotalSeconds, 1)
+    # think=false matters enormously on the reasoning models in this table.
+    # Measured on the real lab VM: qwen3.5:4b spent 222 tokens / 31.8s to
+    # answer "hello" with thinking on, and 10 tokens / 2.1s with it off -
+    # same visible answer. Ollama rejects the field outright on models that
+    # don't support thinking, so fall back rather than assume.
+    $attempts = @(
+        @{ Label = 'thinking disabled'; Body = @{ model = $expectedChatModel; prompt = $prompt; stream = $false; think = $false } }
+        @{ Label = 'default';           Body = @{ model = $expectedChatModel; prompt = $prompt; stream = $false } }
+    )
+
+    $reply = $null
+    $usedLabel = $null
+    $seconds = 0
+    $lastError = $null
+    foreach ($attempt in $attempts) {
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        try {
+            $reply = Invoke-RestMethod -Uri "$ollamaApi/api/generate" -Method Post -Body ($attempt.Body | ConvertTo-Json) -ContentType 'application/json' -TimeoutSec $GenerationTimeoutSeconds
+            $stopwatch.Stop()
+            $seconds = [math]::Round($stopwatch.Elapsed.TotalSeconds, 1)
+            $usedLabel = $attempt.Label
+            break
+        }
+        catch {
+            $stopwatch.Stop()
+            $lastError = $_.Exception.Message
+            # A timeout is a real result, not a reason to retry differently -
+            # report it plainly instead of letting the generic handler call
+            # it "an unexpected error".
+            if ($lastError -match 'timed out') {
+                Add-Check -Name 'Model generates a response' -Status FAIL -Detail "$expectedChatModel did not answer a one-sentence prompt within ${GenerationTimeoutSeconds}s (attempt: $($attempt.Label)). Attendees would wait at least this long for every reply. Check whether the model is reasoning before answering, and whether it fits in this GPU's VRAM." -Data @{ Model = $expectedChatModel; TimeoutSeconds = $GenerationTimeoutSeconds }
+                return
+            }
+        }
+    }
+
+    if (-not $reply) {
+        Add-Check -Name 'Model generates a response' -Status FAIL -Detail "$expectedChatModel could not be prompted at all. Last error: $lastError"
+        return
+    }
 
     $text = "$($reply.response)".Trim()
     if (-not $text) {
         Add-Check -Name 'Model generates a response' -Status FAIL -Detail "$expectedChatModel accepted the request but returned an empty response after ${seconds}s."
         return
     }
+
+    $tokens = [int]$reply.eval_count
+    $tokensPerSecond = if ($reply.eval_duration -gt 0) { [math]::Round($tokens / ($reply.eval_duration / 1e9), 1) } else { 0 }
     $excerpt = if ($text.Length -gt 200) { $text.Substring(0, 200) + '...' } else { $text }
-    # 60s for one short sentence means attendees will wait minutes per
-    # answer. Still works, so not a FAIL - but the facilitator should know.
-    $status = if ($seconds -gt 60) { 'WARN' } else { 'PASS' }
-    $note = if ($status -eq 'WARN') { " - slow enough to hurt in a 90-minute session; check nothing else is competing for the GPU." } else { '' }
-    Add-Check -Name 'Model generates a response' -Status $status -Detail "$expectedChatModel replied in ${seconds}s$note Excerpt: $excerpt" -Data @{
-        Model = $expectedChatModel; Seconds = $seconds; Excerpt = $excerpt
+
+    # 30s for one sentence means a real routine takes minutes. It still
+    # works, so not a FAIL - but the facilitator needs to know before 60-90
+    # people are waiting on it.
+    $status = if ($seconds -gt 30) { 'WARN' } else { 'PASS' }
+    $note = if ($status -eq 'WARN') { ' - slow enough to hurt in a 90-minute session; check whether the model is reasoning before answering, and that nothing else is competing for the GPU.' } else { '' }
+    Add-Check -Name 'Model generates a response' -Status $status -Detail "$expectedChatModel replied in ${seconds}s ($tokens tokens, $tokensPerSecond tok/s, $usedLabel)$note Excerpt: $excerpt" -Data @{
+        Model = $expectedChatModel; Seconds = $seconds; Tokens = $tokens
+        TokensPerSecond = $tokensPerSecond; Mode = $usedLabel; Excerpt = $excerpt
     }
 }
 
@@ -343,7 +381,10 @@ Invoke-Check 'Git helpers smoke test' {
         $env:LAB_SCAFFOLD_TEMPLATE = $sandboxScaffold
         Import-Module $moduleManifest -Force
 
-        New-Routine -Name 'selftest-routine' 3>&1 | Out-Null
+        # 6>&1 as well as 3>&1: New-Routine reports via Write-Host, which is
+        # the information stream (6) on PowerShell 5+, not the warning
+        # stream - without this its output leaks into the self-test log.
+        New-Routine -Name 'selftest-routine' 3>&1 6>&1 | Out-Null
 
         Push-Location $sandbox
         $branch = (git rev-parse --abbrev-ref HEAD 2>&1).ToString().Trim()
