@@ -15,10 +15,10 @@ jobs:
     name: markdownlint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
       # Rules and ignores come from .markdownlint-cli2.jsonc, so this is
       # byte-for-byte what a facilitator runs locally.
       - name: Lint every markdown file
@@ -28,7 +28,7 @@ jobs:
     name: PSScriptAnalyzer
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install PSScriptAnalyzer
         shell: pwsh
         run: Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
@@ -62,7 +62,8 @@ jobs:
     # scripts - the same way it runs on a facilitator's machine.
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Links, folder map, copy targets, model tags, bracket balance
         shell: pwsh
         run: .\verification\Test-RepoConsistency.ps1
+
