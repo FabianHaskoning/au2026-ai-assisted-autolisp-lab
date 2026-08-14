@@ -1,0 +1,68 @@
+name: validate
+
+# The repo half of the feedback loop (the VM half is verification/).
+# Everything here also runs locally - nothing depends on being in CI.
+on:
+  push:
+    branches-ignore:
+      # Automated self-test output, not source. Validating it would fail
+      # on its own generated README and waste a runner per VM report.
+      - vm-reports
+  pull_request:
+
+jobs:
+  markdown:
+    name: markdownlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # Rules and ignores come from .markdownlint-cli2.jsonc, so this is
+      # byte-for-byte what a facilitator runs locally.
+      - name: Lint every markdown file
+        run: npx --yes markdownlint-cli2 "**/*.md"
+
+  powershell:
+    name: PSScriptAnalyzer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+      # Fails on Error only. Warnings are surfaced but don't block, because
+      # the remaining ones are deliberate and live in scripts this project
+      # shouldn't be rewriting to satisfy a linter: the official Claude Code
+      # installer one-liner (Invoke-Expression), and two catch blocks that
+      # are empty on purpose with a comment saying why. Broad rules that
+      # simply don't apply here are excluded in PSScriptAnalyzerSettings.psd1
+      # instead, so this list stays short enough to actually read.
+      - name: Analyze
+        shell: pwsh
+        run: |
+          $settings = '.\PSScriptAnalyzerSettings.psd1'
+          $warnings = Invoke-ScriptAnalyzer -Path . -Recurse -Settings $settings -Severity Warning
+          if ($warnings) {
+            Write-Host "PSScriptAnalyzer warnings ($($warnings.Count)) - not blocking:"
+            $warnings | Format-Table RuleName, ScriptName, Line, Message -AutoSize -Wrap | Out-String -Width 160 | Write-Host
+          }
+          $errors = Invoke-ScriptAnalyzer -Path . -Recurse -Settings $settings -Severity Error
+          if ($errors) {
+            $errors | Format-Table RuleName, ScriptName, Line, Message -AutoSize -Wrap | Out-String -Width 160 | Write-Host
+            throw "PSScriptAnalyzer found $($errors.Count) error(s)."
+          }
+          Write-Host 'PSScriptAnalyzer: no errors.'
+
+  consistency:
+    name: repo consistency
+    # Windows because the check reads a .psd1 via Import-PowerShellDataFile
+    # and resolves Windows-style relative paths out of the provisioning
+    # scripts - the same way it runs on a facilitator's machine.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Links, folder map, copy targets, model tags, bracket balance
+        shell: pwsh
+        run: .\verification\Test-RepoConsistency.ps1

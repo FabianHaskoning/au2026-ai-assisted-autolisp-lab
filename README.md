@@ -23,7 +23,9 @@ separately, not part of the generic scaffold itself.
 
 | Folder | Purpose |
 | --- | --- |
-| [`reference/`](reference/) | Copy of the submitted session abstract PDF. |
+| [`attendee/`](attendee/) | What attendees actually read during the session: `START-HERE.md` and the three parallel tracks. Synced onto the VM by provisioning. |
+| [`reference/`](reference/) | The submitted session abstract, and the earlier internal workshop handout it grew out of. |
+| [`verification/`](verification/) | The feedback loop: a VM self-test whose report is pushed back through git, plus the repo-consistency check CI runs. |
 | [`provisioning/`](provisioning/) | PowerShell scripts to check VM hardware/software and provision the environment (Ollama, VS Code, Continue.dev, git, optionally the Claude Code CLI). |
 | [`continue-config/`](continue-config/) | The local-model wiring (Continue.dev + Ollama) and the instruction files the model reads on every prompt. |
 | [`claude-code-config/`](claude-code-config/) | Optional, advanced path: the real Claude Code CLI wired to a local Ollama model — no Anthropic account needed. |
