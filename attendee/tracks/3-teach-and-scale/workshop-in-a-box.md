@@ -30,9 +30,9 @@ Copilot licence for every designer isn't.
 
 ## Picking a model for your hardware
 
-[`provisioning/config/model-decision-table.psd1`](../../../provisioning/config/model-decision-table.psd1)
-does this automatically, but the reasoning is worth understanding because it's
-the decision people get wrong:
+`provisioning/config/model-decision-table.psd1` in the repo does this
+automatically, but the reasoning is worth understanding because it's the
+decision people get wrong:
 
 | RAM | Chat model | Notes |
 | --- | --- | --- |
@@ -52,15 +52,14 @@ Two traps:
   is unreliable at agentic tool use, which is why the top tier switches family
   rather than just scaling up.
 
-Run
-[`provisioning/Test-LabVMSpecs.ps1`](../../../provisioning/Test-LabVMSpecs.ps1)
-on a representative machine and it tells you which tier you're on.
+Run `provisioning/Test-LabVMSpecs.ps1` on a representative machine and it tells
+you which tier you're on.
 
 ---
 
 ## Setting the machines up
 
-[`provisioning/Provision-LabVM.ps1`](../../../provisioning/Provision-LabVM.ps1),
+`provisioning/Provision-LabVM.ps1`,
 run once as Administrator, does the lot: installs git, VS Code, Ollama and
 Continue.dev, pulls the right model, writes the assistant config, creates the
 attendee workspace as a git repo, installs the `New-Routine`/`save`/`undo`
@@ -101,9 +100,8 @@ affecting many. Note it, keep moving, follow up individually.
 
 ## What will actually go wrong
 
-From
-[`facilitator/troubleshooting.md`](../../../facilitator/troubleshooting.md),
-in roughly the order you'll meet them:
+From `facilitator/troubleshooting.md` in the repo, in roughly the order you'll
+meet them:
 
 | Problem | Fix |
 | --- | --- |

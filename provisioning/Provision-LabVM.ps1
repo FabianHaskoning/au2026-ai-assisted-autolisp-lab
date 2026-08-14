@@ -481,6 +481,20 @@ try {
         Copy-Item -Path (Join-Path $repoRoot 'scaffold\*') -Destination $scaffoldTemplateDir -Recurse -Force
         Write-LabLog "Synced scaffold template into $scaffoldTemplateDir" -Level Success
 
+        # The three-track instructions attendees actually read (see
+        # attendee/README.md). Copied in, not linked, so the workspace is
+        # self-contained and the files land in the attendee's own first
+        # commit - which is what makes Track 2's `git diff` exercise work.
+        # Always overwritten: this repo is the source of truth, and a VM
+        # carrying an older copy from a previous provisioning run is exactly
+        # the failure this avoids.
+        Copy-Item -Path (Join-Path $repoRoot 'attendee\START-HERE.md') -Destination (Join-Path $workspaceRoot 'START-HERE.md') -Force
+        $tracksDir = Join-Path $workspaceRoot 'tracks'
+        New-Item -ItemType Directory -Path $tracksDir -Force | Out-Null
+        Copy-Item -Path (Join-Path $repoRoot 'attendee\tracks\*') -Destination $tracksDir -Recurse -Force
+        Write-LabLog "Synced attendee instructions into $workspaceRoot (START-HERE.md + tracks\)" -Level Success
+        $installed += 'Attendee instructions (START-HERE.md + tracks)'
+
         if (-not (Test-Path (Join-Path $workspaceRoot 'README-git-helpers.md'))) {
             Copy-Item -Path (Join-Path $repoRoot 'git-helpers\README.md') -Destination (Join-Path $workspaceRoot 'README-git-helpers.md')
         }
@@ -510,6 +524,74 @@ try {
 }
 finally {
     Pop-Location
+}
+
+# --- Step 8b: "START HERE" desktop shortcut ------------------------------------
+# 60-90 attendees have 90 minutes and no reason to know what C:\LabWork is.
+# One obvious icon on the desktop opens VS Code on the workspace with the
+# instructions already showing. Written to the ALL USERS desktop so it
+# survives the VM being handed to a different user account than the one
+# provisioning ran under.
+#
+# Targets Code.exe directly rather than the `code` shim on PATH: the shim is
+# a .cmd, and a shortcut to it flashes a console window on every launch.
+function Resolve-VSCodeExecutable {
+    $candidates = @(
+        (Join-Path $env:ProgramFiles 'Microsoft VS Code\Code.exe')
+        (Join-Path ${env:ProgramFiles(x86)} 'Microsoft VS Code\Code.exe')
+        (Join-Path $env:LOCALAPPDATA 'Programs\Microsoft VS Code\Code.exe')
+    )
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) { return $candidate }
+    }
+    # Fall back to wherever `code` on PATH lives: <install>\bin\code.cmd,
+    # so Code.exe is two levels up.
+    $codeCmd = (Get-Command code -ErrorAction SilentlyContinue).Source
+    if ($codeCmd) {
+        $exe = Join-Path (Split-Path -Parent (Split-Path -Parent $codeCmd)) 'Code.exe'
+        if (Test-Path $exe) { return $exe }
+    }
+    return $null
+}
+
+$startHerePath = Join-Path $workspaceRoot 'START-HERE.md'
+if ($effectiveSkipVSCode -or $effectivePurpose -ne 'Lisp') {
+    Write-LabLog 'Skipping the START HERE desktop shortcut (VS Code skipped, or Purpose is not Lisp).' -Level Info
+    $skipped += 'START HERE desktop shortcut'
+}
+elseif (-not (Test-Path $startHerePath)) {
+    Write-LabLog "Skipping the START HERE desktop shortcut - $startHerePath was not created." -Level Warn
+    $skipped += 'START HERE desktop shortcut (START-HERE.md missing)'
+}
+else {
+    $vscodeExe = Resolve-VSCodeExecutable
+    if (-not $vscodeExe) {
+        Write-LabLog 'Could not locate Code.exe - skipping the START HERE desktop shortcut. Attendees can still open C:\LabWork\START-HERE.md manually.' -Level Warn
+        $failed += 'START HERE desktop shortcut (Code.exe not found)'
+    }
+    else {
+        $shortcutPath = Join-Path (Join-Path $env:PUBLIC 'Desktop') 'START HERE.lnk'
+        $shortcutExisted = Test-Path $shortcutPath
+        try {
+            $shell = New-Object -ComObject WScript.Shell
+            $shortcut = $shell.CreateShortcut($shortcutPath)
+            $shortcut.TargetPath       = $vscodeExe
+            $shortcut.Arguments        = "`"$workspaceRoot`" `"$startHerePath`""
+            $shortcut.WorkingDirectory = $workspaceRoot
+            $shortcut.IconLocation     = "$vscodeExe,0"
+            $shortcut.Description      = 'Open the AutoLISP lab workspace and the workshop instructions'
+            $shortcut.Save()
+            # Rewritten on every run, like the $PROFILE block below - a stale
+            # shortcut pointing at a path an earlier run used is worse than
+            # no shortcut at all.
+            $installed += if ($shortcutExisted) { 'START HERE desktop shortcut (refreshed)' } else { 'START HERE desktop shortcut' }
+            Write-LabLog "Created the START HERE desktop shortcut at $shortcutPath" -Level Success
+        }
+        catch {
+            Write-LabLog "Could not create the START HERE desktop shortcut: $($_.Exception.Message)" -Level Error
+            $failed += 'START HERE desktop shortcut'
+        }
+    }
 }
 
 # --- Step 9+10: install git helpers + the local Claude Code CLI helper --------
@@ -639,6 +721,7 @@ $status = if ($failed.Count -gt 0) { 'FAIL' } elseif ($needsNewShell.Count -gt 0
 $statusColor = if ($failed.Count -gt 0) { 'Red' } elseif ($needsNewShell.Count -gt 0) { 'Yellow' } else { 'Green' }
 
 Write-Host "`n=== Provision-LabVM Summary: $status ===" -ForegroundColor $statusColor
+Write-Host "Workspace:     $workspaceRoot - attendees start from the 'START HERE' desktop shortcut"
 Write-Host "Chosen model:  $chatModel (chat/edit, fast default), $autocompleteModel (autocomplete)"
 if ($qualityModel) {
     Write-Host "Quality model (opt-in, slower): $qualityModel - switch with 'quality-model' / back with 'fast-model'"
