@@ -1,34 +1,49 @@
 # Pre-flight checklist
 
 Run per VM (or per representative sample of a batch) shortly before doors
-open. Designed to be skimmable in under two minutes. See
-`facilitator/README.md` for the full explanation of each step the first
-time through.
+open. Under two minutes.
 
-- [ ] `provisioning\Test-LabVMSpecs.ps1` → summary is `PASS` (or `WARN`
-      with nothing concerning)
-- [ ] Chosen model matches what's expected for this VM's hardware tier
-- [ ] `ollama list` shows the chat, autocomplete, and (if this tier
-      supports it) quality models already pulled (not pulling live)
-- [ ] New PowerShell window → `New-Routine preflight-check` succeeds
-- [ ] `save "test"` succeeds
-- [ ] `undo` succeeds and explains itself
-- [ ] Clean up: **in `$env:LAB_WORKSPACE_ROOT` (`C:\LabWork` by default,
-      not the staging repo clone!)** run `git checkout master` then
-      `git branch -D preflight-check`, and delete the leftover folder if
-      any remains
-- [ ] VS Code opens the workspace with no error banners
-- [ ] Continue.dev chat panel responds to a trivial prompt, using the
-      local Ollama model (check the model name shown in the panel)
-- [ ] If this tier supports it: `claude-local` responds to a trivial
-      prompt, no Anthropic login prompt appears (optional - skip if
-      `Test-LabVMSpecs.ps1` says the tier doesn't support it)
-- [ ] If this tier supports it: open the Claude Code panel in VS Code
-      (spark icon) - no Anthropic sign-in screen should appear, and a
-      trivial prompt should get a response via the local model (optional)
-- [ ] AutoCAD 2026 launches normally
-- [ ] Civil 3D 2026 launches normally
+## 1. Let the script do the checkable part
+
+```powershell
+git pull
+.\verification\Invoke-LabSelfTest.ps1
+.\verification\Publish-LabReport.ps1
+```
+
+- [ ] Self-test summary is **PASS** (a WARN is acceptable only once you've
+      read the reason and accepted it)
+- [ ] The report published without a credentials error
+
+That single run covers what used to be seven boxes here: hardware and tooling,
+Ollama serving, every expected model pulled by exact tag, **the model actually
+answering** and how fast, the Continue.dev and Claude Code configs, the helper
+commands in both PowerShell versions, the workspace contents, the desktop
+shortcut, and a `New-Routine` smoke test against a temp workspace.
+
+Any FAIL names its own fix. If it doesn't get you there, see
+[`troubleshooting.md`](troubleshooting.md).
+
+## 2. The part no script can check
+
+- [ ] **AutoCAD 2026 launches** and opens a blank drawing
+- [ ] **Civil 3D 2026 launches**
+- [ ] The **START HERE** desktop shortcut opens VS Code on `C:\LabWork` with
+      `START-HERE.md` showing, no error banners
+- [ ] `Ctrl+Shift+V` renders that file readably (this is the first thing every
+      attendee does)
+- [ ] `Ctrl+L` opens the Continue.dev panel and a trivial prompt gets a reply,
+      with the expected model name shown in the panel
+- [ ] Load `C:\LabWork\tracks\1-first-routine\examples\hello-world.lsp` via
+      `APPLOAD` and run `HELLO` - **the exact first thing Track 1 asks for**
 - [ ] Sign off: initials + timestamp
 
-Any unchecked box → see `facilitator/troubleshooting.md` before marking
-this VM ready.
+## 3. Then, from your own machine
+
+```powershell
+.\verification\Get-LabReports.ps1
+```
+
+- [ ] Every VM in the fleet reports **PASS** (the script exits non-zero if not)
+
+That's the go/no-go.

@@ -11,13 +11,24 @@ gets cloned onto the real Skillable VM (author access confirmed) and run
 from there — see [`facilitator/README.md`](facilitator/README.md) for the
 operational checklist.
 
-The core of this repo is a **generic scaffold**, not a fixed curriculum:
-governance instructions for the local model, an idempotent provisioning
-script, a hardware diagnostics script, a minimal structural template, and
-facilitator docs. How the beginner/experienced audience split gets handled
-live is the presenter's call, decided separately. [`examples/`](examples/)
-is the one exception — real worked-example AutoLISP content, contributed
-separately, not part of the generic scaffold itself.
+The repo holds both halves of the session: the **environment** (governance
+instructions for the local model, an idempotent provisioning script, hardware
+diagnostics, a structural template, facilitator docs) and the **content**
+attendees work through ([`attendee/`](attendee/)).
+
+After a 15-minute opening talk the room splits into three self-selected
+tracks, all running in parallel with one facilitator each:
+
+| Track | Audience | Expected share |
+| --- | --- | --- |
+| [1 — First routine](attendee/tracks/1-first-routine/) | Never written AutoLISP, or never used AI to write code | ~50% |
+| [2 — Better results](attendee/tracks/2-better-results/) | Has tried it; results are inconsistent | ~35% |
+| [3 — Teach and scale](attendee/tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% |
+
+Attendees install nothing — everything is pre-provisioned, and they start from
+a **START HERE** desktop shortcut. [`examples/`](examples/) sits outside the
+tracks: real worked-example AutoLISP content (cadastral data processing),
+contributed separately.
 
 ## Folder map
 
@@ -38,6 +49,8 @@ separately, not part of the generic scaffold itself.
 ## Where to start
 
 - Setting up or re-testing the VM template: [`provisioning/`](provisioning/), starting with `Test-LabVMSpecs.ps1`.
+- Confirming a VM (or the whole fleet) is actually ready: [`verification/`](verification/).
+- What attendees will read and do: [`attendee/START-HERE.md`](attendee/START-HERE.md).
 - Understanding what the local model has been told: [`continue-config/rules/`](continue-config/rules/) and, for the optional CLI path, [`claude-code-config/`](claude-code-config/).
 - Running the session: [`facilitator/README.md`](facilitator/README.md).
 - Taking it home, or bringing your own AI account (Claude/ChatGPT/Gemini/Kimi/Copilot): [`take-home/README.md`](take-home/README.md).

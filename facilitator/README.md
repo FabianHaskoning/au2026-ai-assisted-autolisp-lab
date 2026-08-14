@@ -1,9 +1,8 @@
 # Facilitator guide
 
 For the presenter and the two LAB assistants (Nicolas Carvajal, Sanne
-Bogers). This covers running the environment, not the curriculum - what
-attendees actually build and how the room is paced is the presenter's call,
-decided separately.
+Bogers). Covers both getting the environment working and running the room.
+What attendees actually read and do is in [`attendee/`](../attendee/).
 
 ## VM access (confirmed)
 
@@ -29,59 +28,87 @@ it directly onto the VM, no credentials needed:
 git clone https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
 ```
 
-## Pre-session validation checklist
+## Pre-session validation
 
-Run this on the actual template VM (and again after any change to the
-image), in this order:
+Run this on the actual template VM, and again after any change to the image:
 
-1. `git pull` in the cloned repo - make sure the VM has the latest.
-2. `provisioning\Test-LabVMSpecs.ps1` - confirm the summary is `PASS` (or
-   `WARN` with nothing concerning). Note the recommended model(s) and
-   whether the local Claude Code CLI is offered on this tier.
-3. `provisioning\Provision-LabVM.ps1` (as Administrator) - confirm it
-   finishes with `PASS` and lists everything as `Installed` (first run) or
-   `Skipped` (a re-run).
-4. Open a **new** PowerShell window, run `New-Routine test-routine` -
-   confirm it creates a branch and files without error.
-5. Run `save "test"` and `undo` - confirm both behave as documented in
-   `git-helpers/README.md`.
-6. Delete the `test-routine` branch/folder and reset the workspace before
-   handing the VM to an attendee.
-7. Open VS Code in the workspace, open the Continue.dev chat panel, send a
-   trivial prompt ("say hello") - confirm it responds using the local
-   Ollama model (check the model name shown in the Continue panel).
-8. If the VM tier supports it: open a terminal, run `claude-local`, send a
-   trivial prompt - confirm it responds using the local model (no Anthropic
-   login prompt should appear). Expect this to be noticeably slower than
-   the Continue.dev chat - see `claude-code-config/README.md`.
-9. Confirm AutoCAD 2026 and Civil 3D 2026 both launch normally.
+```powershell
+git pull                                   # make sure the VM has the latest
+.\provisioning\Provision-LabVM.ps1         # as Administrator; expect PASS
+.\verification\Invoke-LabSelfTest.ps1      # expect PASS
+.\verification\Publish-LabReport.ps1       # send the result back to the team
+```
 
-Once this passes on one VM, use `facilitator/pre-flight-checklist.md` as the
-fast, repeatable version for checking the rest of the fleet.
+The self-test replaces what used to be eight manual steps here. It checks
+hardware and tooling, that Ollama is serving, that every expected model is
+pulled by exact tag, that **the model actually generates a response** (and how
+long it took), that the Continue.dev and Claude Code configs point at models
+that exist, that the helpers are wired into both PowerShell versions, that the
+workspace and desktop shortcut are complete, and that `New-Routine` works -
+the last against a throwaway temp workspace, so no stray branch is left in
+`C:\LabWork` for an attendee to trip over.
+
+**A FAIL means do not hand this VM to an attendee.** Each failure names its own
+fix. See [`verification/README.md`](../verification/README.md) for the full
+list and for publishing credentials.
+
+From your own machine, `verification\Get-LabReports.ps1` shows every VM that
+has reported and exits non-zero if any of them is failing - that is the
+go/no-go signal for the fleet.
+
+Then work through [`pre-flight-checklist.md`](pre-flight-checklist.md) for the
+handful of things no script can check.
+
+## The three tracks
+
+The opening talk sets up the split; attendees self-select in about a minute
+from the table in [`attendee/START-HERE.md`](../attendee/START-HERE.md). All
+three run in parallel for the same ~60 minutes.
+
+| Track | Audience | Expected share | Where it can go wrong |
+| --- | --- | --- | --- |
+| [1 - First routine](../attendee/tracks/1-first-routine/) | Never written AutoLISP, or never used AI to write code | ~50% | Overruns. It is the track that must not - protect steps 2 and 3, drop step 5. |
+| [2 - Better results](../attendee/tracks/2-better-results/) | Has tried it; results are inconsistent | ~35% | A disappointing before/after diff, usually because they reused the old chat instead of starting a new one. |
+| [3 - Teach and scale](../attendee/tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% | GitHub auth on the VM. Path B in `pair-workflow.md` needs no account - route people there rather than debugging tokens. |
+
+Self-selection is deliberately loose. Moving someone mid-session costs nothing:
+no track depends on having done another one.
 
 ## Staffing 60-90 attendees with 3 people
 
-- The presenter drives the room from the front (pacing, live demo,
-  explaining what's happening).
-- The two assistants patrol - physically if in-room, or watching a shared
-  chat/question channel if remote - and handle the small number of
-  recurring failure classes in `troubleshooting.md` directly rather than
-  routing everything through the presenter.
+- **One facilitator per track**, each visibly stationed in one part of the
+  room, beats three people firefighting randomly. Say which corner is which
+  when you announce the split.
+- The presenter drives the room from the front (pacing, explaining what's
+  happening) and floats Track 1, which is both the largest group and the one
+  where being stuck is most demoralising.
+- Assistants handle the recurring failure classes in `troubleshooting.md`
+  directly rather than routing everything through the presenter.
 - Agree on a simple, visible "I'm stuck" signal before the session starts
   (raised hand, a specific emoji/word in chat) so assistants can triage at a
   glance across a full room instead of waiting to be flagged down.
 - Don't try to debug an attendee's exact problem live in front of everyone
   unless it's clearly common - note it, keep moving, follow up 1:1.
+- **Say up front that the model will confidently make things up.** Framed as a
+  known property it becomes the session's point about validation; discovered
+  by surprise it reads as the workshop being broken.
 
 ## Timing
 
-The slowest step by far is the first `ollama pull` of the chat model (can
-be several minutes depending on model size and network). **Pre-pull the
-model into the VM image** via `Provision-LabVM.ps1` ahead of time - never
-during the live 90 minutes. `SkipOllamaPull` in
+| Minutes | What |
+| --- | --- |
+| 0-15 | Talk: why this matters, and the three-track split |
+| 15-20 | Everyone opens the **START HERE** desktop shortcut and picks a track |
+| 20-80 | Hands-on. Facilitators hold their tracks |
+| 80-90 | Two or three attendees show what they built; where to get the repo |
+
+The slowest setup step by far is the first `ollama pull` of the chat model
+(several minutes depending on model size and network). **Pre-pull the models
+into the VM image** via `Provision-LabVM.ps1` ahead of time - never during the
+live 90 minutes. `SkipOllamaPull` in
 `provisioning/config/provisioning.config.psd1` lets you re-run provisioning
-for testing without re-pulling once the model is already cached in the
-image.
+for testing without re-pulling once they're cached in the image. Self-test
+check 3 is what confirms it actually happened on a given VM.
 
 ## Take-home / bring-your-own-account (optional)
 
@@ -96,9 +123,14 @@ Provision-LabVM.ps1 -TakeHome -WorkspaceRootOverride C:\Scratch\LabWork`)
 without needing to be on the actual lab VM. None of this changes what the
 default lab-VM provisioning run (no `-TakeHome`) does.
 
-## Out of scope for this document
+## Afterwards
 
-Curriculum content, exercise pacing, and how the beginner/experienced
-audience split is handled live are the presenter's decisions, made
-separately - this guide only covers getting the environment itself
-reliably working.
+Attendees keep the repo, not the VM. Point them at
+[`attendee/tracks/3-teach-and-scale/workshop-in-a-box.md`](../attendee/tracks/3-teach-and-scale/workshop-in-a-box.md)
+regardless of which track they were on - it's the "how do I do this at my
+company" page, and it's the one thing most likely to be read on the flight
+home.
+
+Contributions come back as pull requests against the public repo. The most
+useful are corrections to `attendee/` from people who used it under real
+conditions - we only get to observe that once.
