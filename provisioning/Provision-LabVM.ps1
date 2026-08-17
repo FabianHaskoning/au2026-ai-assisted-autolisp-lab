@@ -205,6 +205,52 @@ else {
     }
 }
 
+# --- Step 3b: keep the model warm ---------------------------------------------
+# Measured on the real lab VM: the first generate call after a boot took
+# 90.7s, ~88s of it loading the model off cold disk. Every later call was
+# ~2s, and the model survived an idle gap - so this is a once-per-boot cost.
+# It lands on an attendee's very first prompt, which is the one interaction
+# that has to feel effortless. Move it into the opening talk instead.
+if (Test-Path (Join-Path $env:ProgramData 'LabSession')) { } else { New-Item -ItemType Directory -Path (Join-Path $env:ProgramData 'LabSession') -Force | Out-Null }
+$labProgramData = Join-Path $env:ProgramData 'LabSession'
+
+# 110GB of RAM on this VM - there is no reason to ever evict a 3.4GB model.
+# Machine-scoped so it survives the template being captured and re-launched
+# under a different account.
+if ([Environment]::GetEnvironmentVariable('OLLAMA_KEEP_ALIVE', 'Machine') -ne '-1') {
+    [Environment]::SetEnvironmentVariable('OLLAMA_KEEP_ALIVE', '-1', 'Machine')
+    Write-LabLog 'Set OLLAMA_KEEP_ALIVE=-1 machine-wide so the model is never unloaded (takes effect when Ollama next restarts).' -Level Success
+    $installed += 'OLLAMA_KEEP_ALIVE=-1'
+}
+else {
+    $skipped += 'OLLAMA_KEEP_ALIVE=-1 (already set)'
+}
+$env:OLLAMA_KEEP_ALIVE = '-1'
+
+$warmScriptPath = Join-Path $labProgramData 'Warm-OllamaModel.ps1'
+Copy-Item -Path (Join-Path $PSScriptRoot 'Warm-OllamaModel.ps1') -Destination $warmScriptPath -Force
+@{ Model = $chatModel } | ConvertTo-Json | Set-Content -Path (Join-Path $labProgramData 'warm-model.json') -Encoding UTF8
+
+try {
+    # Runs as whoever logs in, hidden, 30s after logon so it doesn't fight
+    # the rest of the boot. Re-registered on every provisioning run because
+    # the model tier can change between runs.
+    $taskName = 'LabSession-WarmOllamaModel'
+    $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
+        -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$warmScriptPath`""
+    $trigger = New-ScheduledTaskTrigger -AtLogOn
+    $trigger.Delay = 'PT30S'
+    $principal = New-ScheduledTaskPrincipal -GroupId 'BUILTIN\Users' -RunLevel Limited
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 15)
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
+    Write-LabLog "Registered the '$taskName' logon task - the model loads during the opening talk instead of on an attendee's first prompt." -Level Success
+    $installed += 'Ollama warm-up logon task'
+}
+catch {
+    Write-LabLog "Could not register the Ollama warm-up task: $($_.Exception.Message). Not fatal - the first prompt on each VM will just take about 90 seconds." -Level Warn
+    $failed += 'Ollama warm-up logon task'
+}
+
 # --- Step 4: Continue.dev extension --------------------------------------------
 if ($effectiveSkipVSCode) {
     Write-LabLog 'VS Code was skipped - not installing the Continue.dev extension.' -Level Info

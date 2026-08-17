@@ -421,7 +421,32 @@ Invoke-Check 'Git helpers smoke test' {
     }
 }
 
-# --- 10. Every example routine still parses ----------------------------------
+# --- 10. Is the model warm-start actually configured? ------------------------
+# Without this, the first prompt on a freshly booted VM costs ~90s - and
+# that first prompt is Track 1's opening step. The check has to run on a
+# template VM before capture, so it verifies configuration, not warmth.
+Invoke-Check 'Ollama warm-start configured' {
+    $problems = @()
+    if ([Environment]::GetEnvironmentVariable('OLLAMA_KEEP_ALIVE', 'Machine') -ne '-1') {
+        $problems += 'OLLAMA_KEEP_ALIVE is not set to -1 machine-wide'
+    }
+    $warmScript = Join-Path $env:ProgramData 'LabSession\Warm-OllamaModel.ps1'
+    if (-not (Test-Path $warmScript)) { $problems += 'the warm-up script is not installed' }
+
+    $task = Get-ScheduledTask -TaskName 'LabSession-WarmOllamaModel' -ErrorAction SilentlyContinue
+    if (-not $task) { $problems += 'the LabSession-WarmOllamaModel logon task is not registered' }
+
+    if ($problems.Count -eq 0) {
+        $logPath = Join-Path $env:ProgramData 'LabSession\warm-model.log'
+        $lastRun = if (Test-Path $logPath) { (Get-Content -Path $logPath -Tail 1) } else { 'not run yet on this VM' }
+        Add-Check -Name 'Ollama warm-start configured' -Status PASS -Detail "Keep-alive set, warm-up task registered. Last warm-up: $lastRun" -Data @{ LastWarmUp = $lastRun }
+    }
+    else {
+        Add-Check -Name 'Ollama warm-start configured' -Status WARN -Detail "$($problems -join '; '). The first prompt on a freshly booted VM will take about 90 seconds - which is exactly Track 1's opening step. Re-run Provision-LabVM.ps1." -Data @{ Problems = $problems }
+    }
+}
+
+# --- 11. Every example routine still parses ----------------------------------
 Invoke-Check 'Example routines parse' {
     $result = & (Join-Path $PSScriptRoot 'Test-LispBalance.ps1') -Path (Join-Path $repoRoot 'attendee')
     if ($result.Unbalanced.Count -eq 0) {
