@@ -219,18 +219,33 @@ Invoke-Check 'Model generates a response' {
         return
     }
 
+    # Wall-clock alone is ambiguous and blames the wrong thing: measured on
+    # the real lab VM, a cold run took 90.7s total of which 2.0s was
+    # generation and ~88s was loading the model into VRAM. Those need
+    # opposite fixes - one is a model choice, the other is a keep-alive
+    # setting - so report them separately.
     $tokens = [int]$reply.eval_count
+    $loadSeconds = [math]::Round($reply.load_duration / 1e9, 1)
+    $evalSeconds = [math]::Round($reply.eval_duration / 1e9, 1)
     $tokensPerSecond = if ($reply.eval_duration -gt 0) { [math]::Round($tokens / ($reply.eval_duration / 1e9), 1) } else { 0 }
     $excerpt = if ($text.Length -gt 200) { $text.Substring(0, 200) + '...' } else { $text }
 
-    # 30s for one sentence means a real routine takes minutes. It still
-    # works, so not a FAIL - but the facilitator needs to know before 60-90
-    # people are waiting on it.
-    $status = if ($seconds -gt 30) { 'WARN' } else { 'PASS' }
-    $note = if ($status -eq 'WARN') { ' - slow enough to hurt in a 90-minute session; check whether the model is reasoning before answering, and that nothing else is competing for the GPU.' } else { '' }
-    Add-Check -Name 'Model generates a response' -Status $status -Detail "$expectedChatModel replied in ${seconds}s ($tokens tokens, $tokensPerSecond tok/s, $usedLabel)$note Excerpt: $excerpt" -Data @{
-        Model = $expectedChatModel; Seconds = $seconds; Tokens = $tokens
-        TokensPerSecond = $tokensPerSecond; Mode = $usedLabel; Excerpt = $excerpt
+    $notes = @()
+    $status = 'PASS'
+    if ($tokensPerSecond -gt 0 -and $tokensPerSecond -lt 5) {
+        $status = 'WARN'
+        $notes += "generation is only $tokensPerSecond tok/s, so a full routine will take minutes - check the model fits this GPU's VRAM and that it isn't reasoning before answering"
+    }
+    if ($loadSeconds -gt 20) {
+        $status = 'WARN'
+        $notes += "the model took ${loadSeconds}s to load into memory. Generation itself was fine. This is a cold start, and Ollama unloads an idle model after 5 minutes by default - so any attendee who pauses pays it again. Set OLLAMA_KEEP_ALIVE and pre-warm the model at logon"
+    }
+    $note = if ($notes) { ' - ' + ($notes -join '; ') + '.' } else { '' }
+
+    Add-Check -Name 'Model generates a response' -Status $status -Detail "$expectedChatModel answered in ${seconds}s total (load ${loadSeconds}s, generate ${evalSeconds}s for $tokens tokens = $tokensPerSecond tok/s, $usedLabel)$note Excerpt: $excerpt" -Data @{
+        Model = $expectedChatModel; TotalSeconds = $seconds; LoadSeconds = $loadSeconds
+        EvalSeconds = $evalSeconds; Tokens = $tokens; TokensPerSecond = $tokensPerSecond
+        Mode = $usedLabel; Excerpt = $excerpt
     }
 }
 
