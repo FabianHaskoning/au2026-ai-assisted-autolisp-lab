@@ -77,6 +77,17 @@ $worktree = Join-Path ([System.IO.Path]::GetTempPath()) "lab-reports-$([guid]::N
 $worktreeCreated = $false
 
 try {
+    # Windows PowerShell 5.1 turns any native stderr line into a TERMINATING
+    # error when it is redirected (2>&1) under $ErrorActionPreference =
+    # 'Stop' - and git chats on stderr even on success ("Switched to a new
+    # branch...", push progress) and on expected probes (the fetch below
+    # fails on purpose the very first time). Confirmed live: the first-ever
+    # publish died on the fetch instead of taking the create-the-branch
+    # path. All git work in this block is guarded by explicit throws and
+    # $LASTEXITCODE checks, so relax the preference here and restore it in
+    # finally.
+    $ErrorActionPreference = 'Continue'
+
     # Prefer the remote's version of the branch if there is one, so two
     # facilitators publishing from different VMs don't fork it.
     git -C $repoRoot fetch $Remote $reportBranch 2>&1 | Out-Null
@@ -154,6 +165,7 @@ catch {
     Write-LabLog "Publishing failed: $($_.Exception.Message). Your checkout was not modified - the report is still in $OutputDirectory." -Level Error
 }
 finally {
+    $ErrorActionPreference = 'Stop'
     if ($worktreeCreated -and -not $DryRun) {
         git -C $repoRoot worktree remove --force $worktree 2>&1 | Out-Null
         if (Test-Path $worktree) { Remove-Item -Path $worktree -Recurse -Force -ErrorAction SilentlyContinue }
