@@ -545,6 +545,8 @@ Write-Host "        $mdPath"
 if ($overall -eq 'FAIL') {
     Write-Host "`nDo NOT hand this VM to an attendee until the failures above are fixed." -ForegroundColor Red
 }
-Write-Host "`nSend it back to the team:  .\Publish-LabReport.ps1`n"
+# Full path, not a bare .\ name - this hint gets copy-pasted from whatever
+# folder the self-test happened to be run from (usually the repo root).
+Write-Host "`nSend it back to the team:  & '$(Join-Path $PSScriptRoot 'Publish-LabReport.ps1')'`n"
 
 return $report
