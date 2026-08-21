@@ -222,10 +222,17 @@ function Enable-CloudClaude {
 
     $claudeSettingsPath = Get-ClaudeSettingsPath -Root $Root
     $settings = Get-JsonFileSettings -Path $claudeSettingsPath
-    if ($settings -and ($settings.PSObject.Properties.Name -contains 'env')) {
-        foreach ($key in @('ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL')) {
-            Remove-JsonProperty -Object $settings.env -Name $key
+    if ($settings) {
+        if ($settings.PSObject.Properties.Name -contains 'env') {
+            foreach ($key in @('ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL')) {
+                Remove-JsonProperty -Object $settings.env -Name $key
+            }
         }
+        # The "model" field holds an Ollama tag, which Anthropic's API doesn't
+        # know - leaving it behind makes a bare `claude` fail on an unknown
+        # model instead of using the account's default. Enable-LocalClaude
+        # puts a valid local tag back.
+        Remove-JsonProperty -Object $settings -Name 'model'
         Save-JsonFileSettings -Path $claudeSettingsPath -Settings $settings
     }
 
@@ -261,6 +268,12 @@ function Enable-LocalClaude {
         Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_AUTH_TOKEN' -Value 'ollama'
         Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_API_KEY' -Value ''
         Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_BASE_URL' -Value 'http://localhost:11434'
+        # Enable-CloudClaude strips the model field, so put a local tag back -
+        # without one, Claude Code has no model and self-test check 6 fails.
+        # Get-CurrentAgentModel falls back to this tier's fast model, so a
+        # quality-model selection made before cloud-mode is not preserved
+        # across the round trip; re-run quality-model if you want it back.
+        Set-JsonProperty -Object $settings -Name 'model' -Value (Get-CurrentAgentModel -Root $Root)
         Save-JsonFileSettings -Path $claudeSettingsPath -Settings $settings
     }
 
