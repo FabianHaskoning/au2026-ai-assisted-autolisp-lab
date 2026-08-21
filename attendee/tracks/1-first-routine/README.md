@@ -3,11 +3,13 @@
 **For:** you have never written AutoLISP, or never used an AI assistant to
 write code. Both is fine. Most of the room is here.
 
-**You'll leave with:** a routine you asked for, running inside AutoCAD, saved
-in git.
+**You'll leave with:** working examples and a routine you asked for yourself,
+running inside AutoCAD, saved in git - **today**. If you've never done this
+before, that's the entire win. Celebrate it.
 
-**Time:** about 60 minutes. Every step below has a target time - if you're
-running behind, skip step 5, not step 3.
+**Time:** about 75 minutes. Every step below has a target time and they sum to
+less than that - the spare time flows into step 5. If you're running behind,
+skip step 5, not step 3.
 
 > New to all of this? Read [`../../START-HERE.md`](../../START-HERE.md) first -
 > it's one page and it explains `APPLOAD`, `save`, and where your files live.
@@ -140,6 +142,8 @@ job. Ideas, roughly easiest first:
    (`examples/count-blocks.lsp` is a working starting point - read it, then ask
    for the change you want.)
 2. **Batch layer creator** - create a standard set of layers with set colours.
+   (`examples/make-layers.lsp` does exactly this - run it, read it, then ask
+   for your own layer names and colours.)
 3. **Text height fixer** - select all text and multiply its height by 1.5.
 4. **AsBuilt converter** - change layer properties from ToBuild to AsBuilt.
 5. **Quick dimension tool** - place a dimension with a fixed style on a fixed
@@ -150,10 +154,14 @@ keeps them from tangling.
 
 ---
 
-## Done? Two things
+## Done? Three things
 
 1. Run `save "final version"` one last time.
 2. Have a look at [Track 2](../2-better-results/README.md). It explains why the
    assistant on this VM produced better AutoLISP than you might have expected -
    and how to get that same lift at home. It's a five-minute read even if you
    don't do the exercise.
+3. Want to see where this road leads? `APPLOAD`
+   `C:\LabWork\showcase\roundabout\rdb-loader.lsp` and type `ROUNDABOUT` in a
+   blank drawing. That's a full application built from exactly the patterns
+   you used today.

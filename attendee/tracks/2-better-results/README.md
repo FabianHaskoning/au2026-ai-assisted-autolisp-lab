@@ -3,10 +3,11 @@
 **For:** you've got an AI assistant to write AutoLISP before. Sometimes it's
 great, sometimes it's nonsense, and you can't tell in advance which you'll get.
 
-**You'll leave with:** the single highest-leverage trick there is for fixing
-that - and proof, in your own git history, that it works.
+**You'll leave with:** measurably better answers - the single highest-leverage
+trick there is - and working code, produced today, that proves it in your own
+git history.
 
-**Time:** about 60 minutes.
+**Time:** about 75 minutes.
 
 ---
 
@@ -29,8 +30,30 @@ Every serious assistant has this. Only the filename changes:
 | GitHub Copilot | `.github/copilot-instructions.md` |
 | ChatGPT | Project instructions |
 | Claude (claude.ai) | Project instructions |
+| Any tool without instruction-file support | Paste [`boilerplate-prompt.md`](../../boilerplate-prompt.md) as your first message |
 
 Same idea, same payoff, everywhere. That's why this is worth an hour.
+
+---
+
+## Two ways to get the same lift
+
+Both routes end at the same place; pick by which tool you're using today:
+
+- **Route A - an instruction file** (Continue.dev on this VM, or `CLAUDE.md`
+  for Claude Code). The tool reads it automatically on every prompt. This is
+  the route the exercise below uses.
+- **Route B - the boilerplate prompt**, for a tool you brought your own
+  account to (ChatGPT, Claude in the browser, Copilot, ...). Same content,
+  delivered by hand: paste [`boilerplate-prompt.md`](../../boilerplate-prompt.md)
+  as your first message, or into the tool's project instructions to turn it
+  into Route A.
+
+Either way, the target is the same: code that looks like
+[`examples/well-behaved-command.lsp`](examples/well-behaved-command.lsp) -
+`*error*` handler, system variables restored on both exit paths, validated
+input, a remembered default. Open it now and skim the header; that's the
+standard your rules push every answer toward.
 
 ---
 
@@ -109,6 +132,10 @@ The rules in `C:\LabWork\.continue\rules\` are yours. Copy the folder, or copy
 the text into whichever tool your company actually lets you use. Nothing in
 them is specific to this VM except the "local model, be brief" advice in
 `04-context-and-token-economy.md`.
+
+Want today's commits on your own GitHub before you leave? That's three
+commands and a token - [`your-own-remote.md`](your-own-remote.md) - and
+entirely optional.
 
 Want to go further - your own company's standards, and getting colleagues onto
 the same setup? That's [Track 3](../3-teach-and-scale/README.md).

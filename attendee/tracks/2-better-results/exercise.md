@@ -44,7 +44,13 @@ save "baseline - before adding my own rule"
 - Did it ask you anything, or just guess?
 
 Some of these will already be handled - that's the six existing rule files
-working. Note which ones aren't.
+working. Note which ones aren't. For what "all of them handled" looks like,
+skim [`examples/well-behaved-command.lsp`](examples/well-behaved-command.lsp).
+
+> Using your own ChatGPT/Claude/Copilot account instead of Continue.dev? The
+> experiment works there too: run the vague prompt in a fresh chat for the
+> baseline, then add [`boilerplate-prompt.md`](../../boilerplate-prompt.md)
+> (plus your own rules) to the project instructions and run it again.
 
 ---
 
@@ -129,6 +135,9 @@ Green is what the rule added, red is what it replaced.
 - Did your rules actually show up in the code?
 - Did anything you *didn't* ask for improve as well?
 - Did anything get worse or longer without being better?
+- How close is `after.lsp` to
+  [`examples/well-behaved-command.lsp`](examples/well-behaved-command.lsp)?
+  The distance that's left is your next rule.
 
 **If the diff is disappointing**, that's the real lesson and it's worth the ten
 minutes to chase it. Almost always it's one of:

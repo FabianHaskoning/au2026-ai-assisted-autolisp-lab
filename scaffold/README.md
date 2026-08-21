@@ -2,8 +2,10 @@
 
 A **template to copy, not a working example.** Every `.lsp` file here
 contains only comment scaffolding and placeholder `defun` stubs - no real
-functionality. Exercise content is intentionally out of scope for this repo
-(see the top-level [`README.md`](../README.md)); what's here is the
+functionality. Working examples live under
+[`attendee/tracks/*/examples/`](../attendee/) and the full-scale
+[`attendee/showcase/roundabout/`](../attendee/showcase/roundabout/), which
+follows this same loader-plus-modules pattern; what's here is the
 structural convention described in
 [`continue-config/rules/03-file-and-naming-conventions.md`](../continue-config/rules/03-file-and-naming-conventions.md),
 made concrete enough to copy.

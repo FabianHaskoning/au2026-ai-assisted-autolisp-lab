@@ -2,9 +2,10 @@
 
 Everything an attendee reads during the 90-minute session. This is the source
 of truth: [`provisioning/Provision-LabVM.ps1`](../provisioning/Provision-LabVM.ps1)
-copies `START-HERE.md` and `tracks/` into the workspace (`C:\LabWork`) and
-creates a **START HERE** desktop shortcut that opens VS Code on it. Edit here,
-re-run provisioning, never edit on the VM.
+copies `START-HERE.md`, `choose-your-assistant.md`, `boilerplate-prompt.md`,
+`tracks/` and `showcase/` into the workspace (`C:\LabWork`) and creates a
+**START HERE** desktop shortcut that opens VS Code on it. Edit here, re-run
+provisioning, never edit on the VM.
 
 ## The three tracks
 
@@ -13,11 +14,11 @@ the table in `START-HERE.md`. All three run in parallel, one facilitator each.
 
 | Track | Audience | Expected share | Outcome |
 | --- | --- | --- | --- |
-| [`1-first-routine/`](tracks/1-first-routine/) | Never written AutoLISP, or never used AI to write code | ~50% | A routine they asked for, running in AutoCAD, committed |
-| [`2-better-results/`](tracks/2-better-results/) | Has tried it; results are inconsistent | ~35% | Instruction files (`.continue/rules/`, `CLAUDE.md`), proven with a `git diff` |
-| [`3-teach-and-scale/`](tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% | A shared two-person git workflow, and a plan to run this session internally |
+| [`1-first-routine/`](tracks/1-first-routine/) | Never written AutoLISP, or never used AI to write code | ~50% | Working examples plus a first own routine, running in AutoCAD, committed |
+| [`2-better-results/`](tracks/2-better-results/) | Has tried it; results are inconsistent | ~35% | Measurably better answers (instruction file or boilerplate prompt), proven with a `git diff` |
+| [`3-teach-and-scale/`](tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% | Not code: a better way of working, and a plan to run this session internally |
 
-Each track is written to fill about 60 minutes with a step that can be dropped
+Each track is written to fill about 75 minutes with a step that can be dropped
 if the room runs late. Track 1 is the one that must not overrun.
 
 ## Conventions for editing these files
@@ -33,7 +34,7 @@ if the room runs late. Track 1 is the one that must not overrun.
 - **No dependency on which AI backend is configured.** The rules-file lesson in
   Track 2 is deliberately framed as portable (Continue.dev, Claude Code,
   Copilot, ChatGPT) so it survives a change of model or provider.
-- `.lsp` files under `tracks/*/examples/` must load cleanly in AutoCAD 2026 and
-  have balanced parentheses -
+- `.lsp` files under `tracks/*/examples/` and `showcase/` must load cleanly in
+  AutoCAD 2026 and have balanced parentheses -
   [`verification/Test-RepoConsistency.ps1`](../verification/) checks the
   brackets, but only a real `APPLOAD` proves the rest.

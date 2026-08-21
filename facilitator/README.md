@@ -63,7 +63,7 @@ handful of things no script can check.
 
 The opening talk sets up the split; attendees self-select in about a minute
 from the table in [`attendee/START-HERE.md`](../attendee/START-HERE.md). All
-three run in parallel for the same ~60 minutes.
+three run in parallel for the same ~75 minutes.
 
 | Track | Audience | Expected share | Where it can go wrong |
 | --- | --- | --- | --- |

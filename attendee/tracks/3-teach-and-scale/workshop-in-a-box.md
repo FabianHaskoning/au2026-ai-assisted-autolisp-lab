@@ -82,8 +82,11 @@ your entire session.
 | --- | --- |
 | 0-15 | Talk. Why this matters, one demo, and the three-track split |
 | 15-20 | Everyone opens the desktop shortcut and picks a track |
-| 20-80 | Hands-on. Facilitators circulate |
-| 80-90 | Two or three people show what they built. Where to get the repo |
+| 20-85 | Hands-on. Facilitators circulate |
+| 85-90 | Two or three people show what they built. Where to get the repo |
+
+Everything after the talk - about 75 minutes - is the attendee's hands-on
+time, and that's the number the attendee docs quote.
 
 **Split the room into tracks and staff each one.** Expect roughly 50% who've
 never tried, 35% who've dabbled, 15% experienced. One facilitator per track,

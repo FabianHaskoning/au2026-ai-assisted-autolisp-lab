@@ -3,12 +3,14 @@
 **For:** you already use AI to write AutoLISP and it mostly works. Your problem
 isn't getting a routine out of a model - it's everything around that.
 
-**You'll leave with:** a workflow two people can share without stepping on each
-other, and a concrete plan for running this session inside your own
-organisation.
+**You'll leave with:** not code - and that's deliberate. This track is about
+learning to do all of this easier, nicer and better: a workflow two people can
+share without stepping on each other, and a concrete plan for running a
+session like this inside your own organisation. If you write barely a line of
+AutoLISP in the next 75 minutes, the track worked.
 
-**Time:** about 60 minutes. Pick two of the three parts below - all three won't
-fit, and the third is a good read on the plane home.
+**Time:** about 75 minutes. Pick two of the four parts below - all four won't
+fit, and the rest is a good read on the plane home.
 
 ---
 
@@ -40,7 +42,9 @@ lets two engineers work on the same routine without one overwriting the other.
 Two ways to do it depending on whether you have a GitHub account.
 
 Do this one if your immediate problem is *"my colleague and I keep sending each
-other files"*.
+other files"*. Working solo and just want today's work on your own GitHub?
+The lighter version is
+[`../2-better-results/your-own-remote.md`](../2-better-results/your-own-remote.md).
 
 ---
 
@@ -76,6 +80,23 @@ What it actually takes: hardware, which model for which machine, the
 provisioning script, timing, how many facilitators, and the failure modes that
 eat your session if you don't plan for them. Everything in it is in this repo
 already and free to reuse.
+
+---
+
+## Part D - Read the drawing instead of drawing (15 min)
+
+The one technical idea worth taking from this track: the next maturity level
+of AutoLISP tooling isn't drawing more - it's routines that **understand what
+the drawing already contains**.
+
+1. In a blank drawing, `APPLOAD`
+   `C:\LabWork\showcase\roundabout\rdb-loader.lsp` and run `ROUNDABOUT` - a
+   complete application built with the same patterns the tracks teach.
+2. Then `APPLOAD` [`examples/read-the-drawing.lsp`](examples/read-the-drawing.lsp)
+   and run `RDBINFO`: click one circle and it identifies the whole roundabout
+   from nothing but the geometry - `entsel`, `ssget` with a filter, `entget`.
+   It's 80 lines and read-only; the header lists extension exercises if you
+   want to go further with your assistant.
 
 ---
 
