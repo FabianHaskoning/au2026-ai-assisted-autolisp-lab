@@ -93,6 +93,48 @@ function Install-ViaWinget {
     }
 }
 
+function Install-OptionalWingetApp {
+    <#
+        .SYNOPSIS
+        Best-effort winget install for OPTIONAL GUI apps (the AI assistant
+        desktop apps). Differs from Install-ViaWinget on purpose: GUI apps
+        put no command on PATH, so idempotence is checked via
+        `winget list --id` instead of Test-CommandExists, and ANY failure
+        is a Warn + $script:skipped, never $script:failed - these apps are
+        account-based extras, and enterprise images commonly block the
+        msstore source. The web shortcuts are the documented fallback.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$DisplayName,
+        [Parameter(Mandatory)][string]$WingetId,
+        [Parameter(Mandatory)][string]$Source
+    )
+    try {
+        # No --source on `winget list`: it filters INSTALLED packages, and
+        # msstore-sourced IDs correlate unreliably with the filter applied.
+        winget list --id $WingetId --exact --accept-source-agreements 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-LabLog "$DisplayName already installed - skipping." -Level Info
+            $script:skipped += $DisplayName
+            return
+        }
+        Write-LabLog "Installing $DisplayName via winget ($Source)..." -Level Info
+        winget install --id $WingetId --exact --source $Source --silent --accept-package-agreements --accept-source-agreements | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-LabLog "$DisplayName installed." -Level Success
+            $script:installed += $DisplayName
+        }
+        else {
+            Write-LabLog "$DisplayName install failed (winget exit code $LASTEXITCODE) - optional, continuing. Attendees use the web shortcut instead." -Level Warn
+            $script:skipped += "$DisplayName (install failed - optional)"
+        }
+    }
+    catch {
+        Write-LabLog "$DisplayName install failed: $($_.Exception.Message) - optional, continuing." -Level Warn
+        $script:skipped += "$DisplayName (install failed - optional)"
+    }
+}
+
 function Get-InstalledVersion {
     <#
         Runs `<command> <versionFlag>` and returns the trimmed output,

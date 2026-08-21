@@ -535,11 +535,16 @@ try {
         # carrying an older copy from a previous provisioning run is exactly
         # the failure this avoids.
         Copy-Item -Path (Join-Path $repoRoot 'attendee\START-HERE.md') -Destination (Join-Path $workspaceRoot 'START-HERE.md') -Force
+        Copy-Item -Path (Join-Path $repoRoot 'attendee\choose-your-assistant.md') -Destination (Join-Path $workspaceRoot 'choose-your-assistant.md') -Force
+        Copy-Item -Path (Join-Path $repoRoot 'attendee\boilerplate-prompt.md') -Destination (Join-Path $workspaceRoot 'boilerplate-prompt.md') -Force
         $tracksDir = Join-Path $workspaceRoot 'tracks'
         New-Item -ItemType Directory -Path $tracksDir -Force | Out-Null
         Copy-Item -Path (Join-Path $repoRoot 'attendee\tracks\*') -Destination $tracksDir -Recurse -Force
-        Write-LabLog "Synced attendee instructions into $workspaceRoot (START-HERE.md + tracks\)" -Level Success
-        $installed += 'Attendee instructions (START-HERE.md + tracks)'
+        $showcaseDir = Join-Path $workspaceRoot 'showcase'
+        New-Item -ItemType Directory -Path $showcaseDir -Force | Out-Null
+        Copy-Item -Path (Join-Path $repoRoot 'attendee\showcase\*') -Destination $showcaseDir -Recurse -Force
+        Write-LabLog "Synced attendee instructions into $workspaceRoot (START-HERE.md + assistant pages + tracks\ + showcase\)" -Level Success
+        $installed += 'Attendee instructions (START-HERE.md + assistant pages + tracks + showcase)'
 
         if (-not (Test-Path (Join-Path $workspaceRoot 'README-git-helpers.md'))) {
             Copy-Item -Path (Join-Path $repoRoot 'git-helpers\README.md') -Destination (Join-Path $workspaceRoot 'README-git-helpers.md')
@@ -637,6 +642,48 @@ else {
             Write-LabLog "Could not create the START HERE desktop shortcut: $($_.Exception.Message)" -Level Error
             $failed += 'START HERE desktop shortcut'
         }
+    }
+}
+
+# --- Step 8c: optional AI assistant apps + web shortcuts -----------------------
+# Attendees with their own ChatGPT/Claude/etc. account may use it (see
+# attendee/choose-your-assistant.md). Desktop apps where they exist, an
+# "AI Assistants" desktop folder of Edge-openable .url shortcuts for the
+# rest. Everything here is optional and best-effort: a blocked msstore or
+# missing winget must never fail provisioning. Skipped under -TakeHome -
+# installing chat apps on someone's personal machine is not our call.
+if ($TakeHome) {
+    Write-LabLog 'Skipping the optional AI assistant apps/shortcuts (-TakeHome).' -Level Info
+    $skipped += 'AI assistant apps + shortcuts (-TakeHome)'
+}
+else {
+    if (Test-CommandExists 'winget') {
+        foreach ($app in $config.DesktopAiApps) {
+            Install-OptionalWingetApp -DisplayName $app.DisplayName -WingetId $app.WingetId -Source $app.Source
+        }
+    }
+    else {
+        Write-LabLog 'winget not available - skipping the optional AI assistant desktop apps.' -Level Warn
+        $skipped += 'AI assistant desktop apps (winget not available)'
+    }
+
+    # Rewritten on every run, same rationale as the START HERE shortcut.
+    $aiShortcutDir = Join-Path (Join-Path $env:PUBLIC 'Desktop') 'AI Assistants'
+    try {
+        New-Item -ItemType Directory -Path $aiShortcutDir -Force | Out-Null
+        foreach ($site in $config.WebAiShortcuts) {
+            $urlFile = Join-Path $aiShortcutDir "$($site.Name).url"
+            Set-Content -Path $urlFile -Value @(
+                '[InternetShortcut]'
+                "URL=$($site.Url)"
+            ) -Encoding ASCII
+        }
+        Write-LabLog "Wrote $($config.WebAiShortcuts.Count) AI assistant web shortcuts into $aiShortcutDir" -Level Success
+        $installed += 'AI Assistants desktop folder'
+    }
+    catch {
+        Write-LabLog "Could not write the AI Assistants desktop folder: $($_.Exception.Message) - optional, continuing." -Level Warn
+        $skipped += 'AI Assistants desktop folder (write failed)'
     }
 }
 

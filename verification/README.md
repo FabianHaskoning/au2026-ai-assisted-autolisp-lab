@@ -43,10 +43,11 @@ but something is off; read the reason.
 | 5 | Continue.dev config points at pulled models | The most common single cause of "the assistant is broken" |
 | 6 | Claude Code routed to local Ollama | Otherwise attendees hit an Anthropic sign-in wall |
 | 7 | Helpers wired into **both** PowerShell versions | 5.1 and 7+ share neither module path nor profile |
-| 8 | Workspace complete + desktop shortcut | Every path `START-HERE.md` and Track 1 promise |
+| 8 | Workspace complete + desktop shortcut | Every path `START-HERE.md` and the tracks promise, including the assistant pages, per-track examples and the roundabout showcase |
 | 9 | `New-Routine` smoke test | Against a **temp** workspace, so no stray branch is left behind |
 | 10 | Ollama warm-start configured | Without it the first prompt after a boot costs ~90s - and that is Track 1's opening step |
 | 11 | Example `.lsp` files parse | An example that won't `APPLOAD` wastes 80 people's first ten minutes |
+| 12 | Optional AI assistant apps + shortcuts | WARN-only: ChatGPT/Claude desktop apps and the AI Assistants folder are account-based extras with a documented web fallback |
 
 ### What check 4 learned on the real VM
 

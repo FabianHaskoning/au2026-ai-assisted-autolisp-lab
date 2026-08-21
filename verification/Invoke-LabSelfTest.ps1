@@ -337,6 +337,12 @@ Invoke-Check 'Attendee workspace' {
         @{ Path = 'tracks\2-better-results\README.md';                 What = 'Track 2' }
         @{ Path = 'tracks\3-teach-and-scale\README.md';                What = 'Track 3' }
         @{ Path = 'tracks\1-first-routine\examples\hello-world.lsp';   What = 'the routine Track 1 step 2 tells attendees to APPLOAD' }
+        @{ Path = 'choose-your-assistant.md';                          What = 'the AI-options page START-HERE points at' }
+        @{ Path = 'boilerplate-prompt.md';                             What = 'the boilerplate prompt for bring-your-own-account tools' }
+        @{ Path = 'showcase\roundabout\rdb-loader.lsp';                What = 'the roundabout showcase loader' }
+        @{ Path = 'tracks\1-first-routine\examples\make-layers.lsp';   What = 'Track 1 layer example' }
+        @{ Path = 'tracks\2-better-results\examples\well-behaved-command.lsp'; What = 'Track 2 well-behaved-command specimen' }
+        @{ Path = 'tracks\3-teach-and-scale\examples\read-the-drawing.lsp';    What = 'Track 3 read-the-drawing example' }
     )
     $missing = @($required | Where-Object { -not (Test-Path (Join-Path $workspaceRoot $_.Path)) } | ForEach-Object { $_.What })
 
@@ -348,7 +354,7 @@ Invoke-Check 'Attendee workspace' {
     if (-not (Test-Path $shortcut)) { $missing += 'START HERE desktop shortcut' }
 
     if ($missing.Count -eq 0) {
-        Add-Check -Name 'Attendee workspace' -Status PASS -Detail "$workspaceRoot is complete: git repo, $ruleCount rules, scaffold, all three tracks, desktop shortcut." -Data @{ WorkspaceRoot = $workspaceRoot; RuleCount = $ruleCount }
+        Add-Check -Name 'Attendee workspace' -Status PASS -Detail "$workspaceRoot is complete: git repo, $ruleCount rules, scaffold, all three tracks + examples, assistant pages, showcase, desktop shortcut." -Data @{ WorkspaceRoot = $workspaceRoot; RuleCount = $ruleCount }
     }
     else {
         Add-Check -Name 'Attendee workspace' -Status FAIL -Detail "Missing from ${workspaceRoot}: $($missing -join '; '). Re-run Provision-LabVM.ps1." -Data @{ WorkspaceRoot = $workspaceRoot; Missing = $missing }
@@ -454,6 +460,37 @@ Invoke-Check 'Example routines parse' {
     }
     else {
         Add-Check -Name 'Example routines parse' -Status FAIL -Detail "Unbalanced parentheses in: $($result.Unbalanced -join ', '). AutoCAD will refuse to load these." -Data @{ Unbalanced = $result.Unbalanced }
+    }
+}
+
+# --- 12. Optional AI assistant apps + shortcuts -------------------------------
+# WARN-only by design: these are account-based extras (see
+# attendee/choose-your-assistant.md). A VM without them still runs the
+# whole session - the web links/Edge are the documented fallback - so a
+# missing app must never block a handover. Reads the same config lists
+# Step 8c of provisioning writes from, so the two cannot drift.
+Invoke-Check 'Optional AI assistant apps' {
+    $config = Import-PowerShellDataFile -Path (Join-Path $repoRoot 'provisioning\config\provisioning.config.psd1')
+    $problems = @()
+
+    $aiShortcutDir = Join-Path (Join-Path $env:PUBLIC 'Desktop') 'AI Assistants'
+    $urlCount = if (Test-Path $aiShortcutDir) { @(Get-ChildItem -Path $aiShortcutDir -Filter '*.url' -File).Count } else { 0 }
+    if ($urlCount -lt $config.WebAiShortcuts.Count) {
+        $problems += "AI Assistants desktop folder has $urlCount of $($config.WebAiShortcuts.Count) web shortcuts"
+    }
+
+    foreach ($app in $config.DesktopAiApps) {
+        # No --source: `winget list` filters installed packages, and msstore
+        # IDs correlate unreliably when the source filter is applied.
+        winget list --id $app.WingetId --exact --accept-source-agreements 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { $problems += "$($app.DisplayName) is not installed" }
+    }
+
+    if ($problems.Count -eq 0) {
+        Add-Check -Name 'Optional AI assistant apps' -Status PASS -Detail "All $($config.DesktopAiApps.Count) desktop apps installed and $urlCount web shortcuts present." -Data @{ ShortcutCount = $urlCount }
+    }
+    else {
+        Add-Check -Name 'Optional AI assistant apps' -Status WARN -Detail "$($problems -join '; '). Optional, account-based - attendees without accounts are unaffected and the web links are the fallback. Re-run Provision-LabVM.ps1 to retry." -Data @{ Problems = $problems; ShortcutCount = $urlCount }
     }
 }
 
