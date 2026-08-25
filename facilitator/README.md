@@ -43,10 +43,17 @@ The self-test replaces what used to be eight manual steps here. It checks
 hardware and tooling, that Ollama is serving, that every expected model is
 pulled by exact tag, that **the model actually generates a response** (and how
 long it took), that the Continue.dev and Claude Code configs point at models
-that exist, that the helpers are wired into both PowerShell versions, that the
-workspace and desktop shortcut are complete, and that `New-Routine` works -
-the last against a throwaway temp workspace, so no stray branch is left in
-`C:\LabWork` for an attendee to trip over.
+that exist, and that the workspace and desktop shortcut are complete - now
+including the `how-to/` cards, both showcases, the ready-made `my-work\`
+folders and the `.vscode\settings.json` that makes the instructions open
+rendered. The two git-helper checks still run but are WARN-only, since no
+attendee path depends on them any more.
+
+**One thing the self-test cannot check: the click paths.** Every instruction is
+written as "click here, then here", and those were written against the standard
+VS Code menus rather than observed on this image. Section 2b of
+[`pre-flight-checklist.md`](pre-flight-checklist.md) walks them mouse-only - do
+it once, properly, on a real VM.
 
 **A FAIL means do not hand this VM to an attendee.** Each failure names its own
 fix. See [`verification/README.md`](../verification/README.md) for the full
@@ -68,8 +75,15 @@ three run in parallel for the same ~75 minutes.
 | Track | Audience | Expected share | Where it can go wrong |
 | --- | --- | --- | --- |
 | [1 - First routine](../attendee/tracks/1-first-routine/) | Never written AutoLISP, or never used AI to write code | ~50% | Overruns. It is the track that must not - protect steps 2 and 3, drop step 5. |
-| [2 - Better results](../attendee/tracks/2-better-results/) | Has tried it; results are inconsistent | ~35% | A disappointing before/after diff, usually because they reused the old chat instead of starting a new one. |
-| [3 - Teach and scale](../attendee/tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% | GitHub auth on the VM. Path B in `pair-workflow.md` needs no account - route people there rather than debugging tokens. |
+| [2 - Better results](../attendee/tracks/2-better-results/) | Has tried it; results are inconsistent | ~35% | A disappointing before/after, usually because they reused the old chat instead of starting a new one. Second most likely: only one file selected, so **Compare Selected** isn't in the right-click menu. |
+| [3 - Teach and scale](../attendee/tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% | Part D (`optional/pair-workflow.md`) is the only git in the whole session and it's marked optional - if GitHub auth misbehaves, route people to its offline Path B or just drop the part. |
+
+**The session is terminal-free.** Tracks 1 and 2 never mention PowerShell or
+git; saving is File → Save, recovery is the VS Code Timeline, and the Track 2
+before/after is **Compare Selected** in the Explorer. Keyboard shortcuts are
+never given as the only instruction - every step names what to click. If an
+attendee asks about version control, `attendee/optional/git-if-you-want-it.md`
+is the answer; the helpers are still installed and still work.
 
 Self-selection is deliberately loose. Moving someone mid-session costs nothing:
 no track depends on having done another one.

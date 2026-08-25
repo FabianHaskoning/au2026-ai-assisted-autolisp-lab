@@ -1,6 +1,7 @@
 # Prompts you can copy and paste
 
-Press `Ctrl+L` in VS Code, paste one of these, press Enter.
+[Open the assistant](../../how-to/open-the-assistant.md), paste one of these
+into the chat box, press Enter.
 
 These are written for the assistant on this VM: a **small, local model**. It
 does well with one concrete request at a time and badly with "build me a tool".
@@ -164,7 +165,8 @@ help with, and produce better answers from a small model. See
 
 ## Things to build, if you need an idea
 
-Roughly easiest first. Run `New-Routine <name>` before starting each one.
+Roughly easiest first. Use a fresh folder for each one — `my-work\routine-2\`,
+then `routine-3\`.
 
 **Straightforward:**
 
@@ -185,3 +187,7 @@ Roughly easiest first. Run `New-Routine <name>` before starting each one.
 For the ambitious ones: ask for **one function at a time**. "Calculate the area
 of a closed polyline the user picks" is a good prompt. "Build me a room data
 extractor" is not - a small local model will produce something long and wrong.
+
+---
+
+← [Track 1](README.md) · [Start here](../../START-HERE.md)

@@ -1,10 +1,17 @@
 # git-helpers
 
+> **No longer part of the attendee path.** The session is deliberately
+> terminal-free: attendees save with File → Save and recover through VS Code's
+> Timeline. These helpers are still installed on the VM and still work - they
+> back the one optional page,
+> [`attendee/optional/git-if-you-want-it.md`](../attendee/optional/git-if-you-want-it.md),
+> and Track 3's optional pair-workflow exercise. See
+> [`attendee/README.md`](../attendee/README.md) for why.
+
 Makes real git discipline (branch before you start, commit early and often)
-close to automatic for 60-90 people who mostly have never used git before,
-supported by just three facilitators. Nothing here is a black box - every
-command below is documented so an attendee (especially the experienced
-sub-audience) can see exactly what runs.
+close to automatic for someone who has never used git. Nothing here is a black
+box - every command below is documented so an attendee can see exactly what
+runs.
 
 ## What gets installed on the VM
 

@@ -1,4 +1,4 @@
-# Running this session yourself
+﻿# Running this session yourself
 
 Everything you need is in the public repo, free to reuse:
 
@@ -62,9 +62,9 @@ you which tier you're on.
 `provisioning/Provision-LabVM.ps1`,
 run once as Administrator, does the lot: installs git, VS Code, Ollama and
 Continue.dev, pulls the right model, writes the assistant config, creates the
-attendee workspace as a git repo, installs the `New-Routine`/`save`/`undo`
-helpers into both PowerShell versions, and drops these instructions onto the
-desktop.
+attendee workspace, creates a ready-made work folder per attendee, sets VS
+Code up so the instructions open as rendered pages, and drops a START HERE
+icon on the desktop.
 
 It's **idempotent** - safe to re-run any number of times. Re-running after a
 partial failure fixes it rather than breaking things.
@@ -108,7 +108,7 @@ meet them:
 
 | Problem | Fix |
 | --- | --- |
-| `New-Routine`/`save`/`undo` not recognised | Their terminal was open before setup finished. New window. |
+| The instructions open as raw markdown | The workspace VS Code settings did not take. Re-run provisioning, reload the window. |
 | The assistant errors immediately | Model tag in the config doesn't match what's pulled. `ollama list`. |
 | "Connection refused" | Ollama service isn't running. `ollama serve`. |
 | Everything is very slow | AutoCAD + VS Code + model all at once. Close things, shorter prompts. |
@@ -126,13 +126,50 @@ broken.
 
 - **60 minutes:** talk for 10, Track 1 only, skip the "change one thing" step.
 - **45 minutes:** demo instead of hands-on for the first routine, then let
-  people modify a working example. Skip git entirely - they can't absorb both.
+  people modify a working example.
 - **Under 45:** don't. People need enough time to fail once and recover, or
   they leave thinking it only works when an expert drives.
 
 The one thing never to cut is **loading a routine into AutoCAD themselves**. An
 attendee who has watched it but not done it hasn't learned anything they'll act
 on.
+
+---
+
+## The decision that mattered most: no terminal
+
+Earlier versions of this session put git in the middle of it. Attendees ran
+`New-Routine` to start, `save` to commit, and compared two files with
+`git diff`. It was well-intentioned — nothing you make can be lost — and it was
+the wrong call.
+
+Two things happen when you put a black window with a blinking cursor in front
+of an engineer who has spent twenty years in AutoCAD. They stop believing the
+session is for them, and they spend their scarce minutes on your tooling
+instead of on the thing they came for. "I'm not a programmer" is not modesty;
+it's a prediction about whether they'll try.
+
+So the whole session now happens in three places — the VS Code editor, the
+assistant panel, and the AutoCAD command line — and every capability git was
+providing has a click-only equivalent:
+
+| Was | Is now |
+| --- | --- |
+| `New-Routine <name>` | Folders that already exist, already named, already there when they arrive |
+| `save "message"` | File → Save |
+| `undo` | The VS Code **Timeline**: right-click an earlier version, Restore Contents |
+| `git diff a.lsp b.lsp` | Select both files, right-click, **Compare Selected** |
+
+Nothing was lost. The Timeline is arguably better for this audience than commits
+are: it needs no setup, no message, no concept of a repository, and it's per
+file. Git is still installed and still documented, in one clearly-labelled
+optional page that nobody has to open.
+
+**The same applies to keyboard shortcuts.** Never write one as the only
+instruction. Say what to click and where it is, then offer the shortcut in
+brackets. You cannot test a shortcut on sixty machines you've never seen, and
+the person who needs the instruction most is the one who won't try `Ctrl+L` on
+faith.
 
 ---
 
@@ -146,11 +183,19 @@ happens **with no version history, no review, and no way to roll back**.
 
 This setup doesn't add risk - it adds the missing half:
 
-- Every routine on a branch, with a full history of what changed and why.
-- A review step before anything is shared.
 - Instruction files that put the safety practices in by default - `*error*`
   handlers, restoring system variables, confirming before destructive
-  operations.
+  operations - versioned and reviewable like any other code.
+- A review step before anything is shared, once you're ready for one.
+- A history of what changed and why, whenever the team is ready to adopt it.
 - A model that runs locally, so no drawing data leaves the building.
 
 That last point closes most conversations with IT and legal on its own.
+
+Note the order. The instruction files are the part that pays off on day one and
+needs nothing from anybody; version control is where you go once more than one
+person is involved. Leading with git is how these initiatives stall.
+
+---
+
+← [Track 3](README.md) · [Start here](../../START-HERE.md)

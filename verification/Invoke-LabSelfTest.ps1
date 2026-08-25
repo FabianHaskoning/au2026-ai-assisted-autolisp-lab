@@ -1,4 +1,4 @@
-<#
+﻿<#
     .SYNOPSIS
     End-to-end verification that one lab VM is genuinely ready for
     attendees. Writes a machine-readable report that Publish-LabReport.ps1
@@ -303,8 +303,9 @@ Invoke-Check 'Claude Code local-model settings' {
 
 # --- 7. Helper commands available in BOTH PowerShell versions -----------------
 # This VM has Windows PowerShell 5.1 and PowerShell 7+, which do not share
-# module paths or profiles. An attendee opening the "wrong" one and finding
-# New-Routine missing is a real, previously-hit failure.
+# module paths or profiles. WARN rather than FAIL since the workshop went
+# terminal-free: the helpers now only back attendee\optional\git-if-you-want-it.md,
+# so a facilitator wants to know, but it is not a reason to hold the VM back.
 Invoke-Check 'Helper commands in both shells' {
     $targets = @(
         @{ Name = 'Windows PowerShell 5.1'; Profile = Join-Path $HOME 'Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1'; Modules = Join-Path $HOME 'Documents\WindowsPowerShell\Modules' }
@@ -321,7 +322,7 @@ Invoke-Check 'Helper commands in both shells' {
         Add-Check -Name 'Helper commands in both shells' -Status PASS -Detail 'New-Routine/save/undo are wired into Windows PowerShell 5.1 and PowerShell 7+.'
     }
     else {
-        Add-Check -Name 'Helper commands in both shells' -Status FAIL -Detail "$($problems -join '; '). Re-run Provision-LabVM.ps1." -Data @{ Problems = $problems }
+        Add-Check -Name 'Helper commands in both shells' -Status WARN -Detail "$($problems -join '; '). Re-run Provision-LabVM.ps1. Optional: no track sends an attendee to a terminal, so this does not block handing the VM over." -Data @{ Problems = $problems }
     }
 }
 
@@ -331,7 +332,7 @@ Invoke-Check 'Attendee workspace' {
     $workspaceRoot = if ($env:LAB_WORKSPACE_ROOT) { $env:LAB_WORKSPACE_ROOT } else { $config.WorkspaceRoot }
     $required = @(
         @{ Path = '.git';                                              What = 'git repo' }
-        @{ Path = '.scaffold-template';                                What = 'scaffold template (New-Routine needs it)' }
+        @{ Path = '.scaffold-template';                                What = 'scaffold template (the my-work folders are built from it)' }
         @{ Path = 'START-HERE.md';                                     What = 'START-HERE.md' }
         @{ Path = 'tracks\1-first-routine\README.md';                  What = 'Track 1' }
         @{ Path = 'tracks\2-better-results\README.md';                 What = 'Track 2' }
@@ -340,9 +341,21 @@ Invoke-Check 'Attendee workspace' {
         @{ Path = 'choose-your-assistant.md';                          What = 'the AI-options page START-HERE points at' }
         @{ Path = 'boilerplate-prompt.md';                             What = 'the boilerplate prompt for bring-your-own-account tools' }
         @{ Path = 'showcase\roundabout\rdb-loader.lsp';                What = 'the roundabout showcase loader' }
+        @{ Path = 'showcase\cadastral-map\eg-loader.lsp';              What = 'the cadastral-map showcase loader' }
         @{ Path = 'tracks\1-first-routine\examples\make-layers.lsp';   What = 'Track 1 layer example' }
         @{ Path = 'tracks\2-better-results\examples\well-behaved-command.lsp'; What = 'Track 2 well-behaved-command specimen' }
         @{ Path = 'tracks\3-teach-and-scale\examples\read-the-drawing.lsp';    What = 'Track 3 read-the-drawing example' }
+        # The terminal-free path: reference cards, the optional git corner, the
+        # ready-made work folders, and the setting that makes the instructions
+        # open rendered instead of as raw markdown.
+        @{ Path = 'how-to\load-a-routine.md';                          What = 'the APPLOAD how-to card every track links to' }
+        @{ Path = 'how-to\save-your-work.md';                          What = 'the save/Timeline how-to card (replaces the git helpers)' }
+        @{ Path = 'how-to\compare-two-files.md';                       What = 'the Compare Selected card Track 2 ends on' }
+        @{ Path = 'optional\git-if-you-want-it.md';                    What = 'the optional git page START-HERE links to' }
+        @{ Path = 'my-work\routine-1\routine-1-loader.lsp';            What = 'the ready-made routine folder Track 1 step 3 opens' }
+        @{ Path = 'my-work\rules-experiment\baseline.lsp';             What = "Track 2's baseline file" }
+        @{ Path = 'my-work\rules-experiment\after.lsp';                What = "Track 2's after file" }
+        @{ Path = '.vscode\settings.json';                             What = 'the workspace settings that open instructions rendered' }
     )
     $missing = @($required | Where-Object { -not (Test-Path (Join-Path $workspaceRoot $_.Path)) } | ForEach-Object { $_.What })
 
@@ -354,29 +367,33 @@ Invoke-Check 'Attendee workspace' {
     if (-not (Test-Path $shortcut)) { $missing += 'START HERE desktop shortcut' }
 
     if ($missing.Count -eq 0) {
-        Add-Check -Name 'Attendee workspace' -Status PASS -Detail "$workspaceRoot is complete: git repo, $ruleCount rules, scaffold, all three tracks + examples, assistant pages, showcase, desktop shortcut." -Data @{ WorkspaceRoot = $workspaceRoot; RuleCount = $ruleCount }
+        Add-Check -Name 'Attendee workspace' -Status PASS -Detail "$workspaceRoot is complete: git repo, $ruleCount rules, scaffold, all three tracks + examples, how-to cards, optional git page, both showcases, ready-made my-work folders, rendered-markdown settings, desktop shortcut." -Data @{ WorkspaceRoot = $workspaceRoot; RuleCount = $ruleCount }
     }
     else {
         Add-Check -Name 'Attendee workspace' -Status FAIL -Detail "Missing from ${workspaceRoot}: $($missing -join '; '). Re-run Provision-LabVM.ps1." -Data @{ WorkspaceRoot = $workspaceRoot; Missing = $missing }
     }
 }
 
-# --- 9. Do the helpers actually work? ----------------------------------------
+# --- 9. Do the git helpers still work? ---------------------------------------
 # Against a throwaway temp workspace, never the attendee's. The old manual
 # checklist created a branch in C:\LabWork and relied on remembering to
 # delete it; a VM handed over with a stray preflight-check branch is
 # confusing at best.
+#
+# WARN, not FAIL: no attendee runs New-Routine any more. The workshop is
+# terminal-free and the helpers only back attendee\optional\, so a VM with a
+# broken helper is still a VM you can hand over.
 Invoke-Check 'Git helpers smoke test' {
     $moduleManifest = Join-Path $HOME 'Documents\PowerShell\Modules\LabGitHelpers\LabGitHelpers.psm1'
     if (-not (Test-Path $moduleManifest)) {
         $moduleManifest = Join-Path $HOME 'Documents\WindowsPowerShell\Modules\LabGitHelpers\LabGitHelpers.psm1'
     }
     if (-not (Test-Path $moduleManifest)) {
-        Add-Check -Name 'Git helpers smoke test' -Status FAIL -Detail 'LabGitHelpers module not installed in either shell - cannot test New-Routine.'
+        Add-Check -Name 'Git helpers smoke test' -Status WARN -Detail 'LabGitHelpers module not installed in either shell - cannot test New-Routine. Optional: only the attendee\optional\ git page mentions it.'
         return
     }
     if (-not (Test-CommandExists 'git')) {
-        Add-Check -Name 'Git helpers smoke test' -Status FAIL -Detail 'git is not on PATH.'
+        Add-Check -Name 'Git helpers smoke test' -Status WARN -Detail 'git is not on PATH, so the optional git helpers cannot be tested. No track needs them.'
         return
     }
 
@@ -416,7 +433,7 @@ Invoke-Check 'Git helpers smoke test' {
             Add-Check -Name 'Git helpers smoke test' -Status PASS -Detail "New-Routine created branch '$branch' and $($createdFiles.Count) scaffold files in a temp workspace (the attendee workspace was not touched)." -Data @{ Branch = $branch; FileCount = $createdFiles.Count }
         }
         else {
-            Add-Check -Name 'Git helpers smoke test' -Status FAIL -Detail "New-Routine did not behave as expected: branch is '$branch' (expected 'selftest-routine'), $($createdFiles.Count) .lsp files created (expected at least 4)." -Data @{ Branch = $branch; FileCount = $createdFiles.Count }
+            Add-Check -Name 'Git helpers smoke test' -Status WARN -Detail "New-Routine did not behave as expected: branch is '$branch' (expected 'selftest-routine'), $($createdFiles.Count) .lsp files created (expected at least 4)." -Data @{ Branch = $branch; FileCount = $createdFiles.Count }
         }
     }
     finally {

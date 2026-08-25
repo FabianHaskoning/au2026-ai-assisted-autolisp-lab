@@ -1,5 +1,10 @@
 # Optional: push your work to your own remote
 
+> **Nothing in the tracks needs this.** It's here for people who already know
+> git and want tonight's work on their own GitHub before they leave. New to
+> all this? [Git, if you want it](git-if-you-want-it.md) explains what's
+> running underneath first.
+
 Everything you make today lives in a real git repository at `C:\LabWork`, on
 this VM only. **That's fine - you don't need a remote for anything in this
 session**, and nothing below is required.
@@ -70,6 +75,10 @@ GitLab, Azure DevOps, Bitbucket - same three commands, different URL, and
 each has its own token flavour (GitLab: personal access token; Azure DevOps:
 PAT). Nothing else changes.
 
-> Working with a colleague rather than solo? Track 3's
-> [`pair-workflow.md`](../3-teach-and-scale/pair-workflow.md) is the fuller
-> version of this: fork, branches, pull requests and a merge conflict.
+> Working with a colleague rather than solo?
+> [`pair-workflow.md`](pair-workflow.md) is the fuller version of this: fork,
+> branches, pull requests and a merge conflict.
+
+---
+
+← [Git, if you want it](git-if-you-want-it.md) · [Start here](../START-HERE.md)

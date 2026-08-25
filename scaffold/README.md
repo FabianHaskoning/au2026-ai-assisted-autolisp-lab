@@ -25,15 +25,15 @@ unambiguous at a glance.
 
 ## Using it
 
-Don't copy these files by hand - run the `New-Routine` helper from
-[`git-helpers/`](../git-helpers/README.md) instead:
+**Attendees never copy these files themselves.**
+[`provisioning/Provision-LabVM.ps1`](../provisioning/Provision-LabVM.ps1)
+expands this template into `C:\LabWork\my-work\routine-1\`, `-2` and `-3`
+before the session starts: every file renamed and every occurrence of
+`prefix`/`PLACEHOLDER` replaced, so an attendee opens a folder that is already
+correct and has nothing to create or name. Existing folders are never
+overwritten - after the session starts they hold somebody's work.
 
-```powershell
-New-Routine -Name fence-layout
-```
-
-This creates a new git branch, copies this template into
-`$WorkspaceRoot\fence-layout\`, renames every file and every occurrence of
-`prefix`/`PLACEHOLDER` to `fence-layout`/`FENCE-LAYOUT`, and makes the first
-commit - so you start from a clean, already-versioned skeleton instead of a
-blank file.
+The `New-Routine` helper in [`git-helpers/`](../git-helpers/README.md) does the
+same expansion plus a git branch and a first commit. It still works, but it is
+no longer part of the attendee path - the session is deliberately terminal-free
+(see [`attendee/README.md`](../attendee/README.md)).

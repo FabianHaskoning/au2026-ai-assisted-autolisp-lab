@@ -4,23 +4,26 @@
 write code. Both is fine. Most of the room is here.
 
 **You'll leave with:** working examples and a routine you asked for yourself,
-running inside AutoCAD, saved in git - **today**. If you've never done this
-before, that's the entire win. Celebrate it.
+running inside AutoCAD — **today**. If you've never done this before, that's
+the entire win. Celebrate it.
 
-**Time:** about 75 minutes. Every step below has a target time and they sum to
-less than that - the spare time flows into step 5. If you're running behind,
-skip step 5, not step 3.
+**Steps:** [1 Say hello](#step-1-say-hello) · [2 Run one](#step-2-run-a-routine-somebody-else-wrote) ·
+[3 Ask for your own](#step-3-ask-for-your-own-routine) · [4 Change one thing](#step-4-change-one-thing) ·
+[5 Go again](#step-5-go-again) · [Done](#done-three-things)
 
-> New to all of this? Read [`../../START-HERE.md`](../../START-HERE.md) first -
-> it's one page and it explains `APPLOAD`, `save`, and where your files live.
+About 75 minutes in total. If you're running behind, skip step 5, not step 3.
 
 ---
 
-## Step 1 - Say hello to the assistant (5 min)
+## Step 1: Say hello
 
-In VS Code, press **`Ctrl+L`**. The assistant panel opens on the side.
+**5 minutes.**
 
-Type anything - `what is AutoLISP?` will do - and press Enter.
+Open the assistant: in the narrow strip of icons down the far left of VS Code,
+click the **Continue** icon. Full instructions with a picture of where to
+look: [Open the assistant](../../how-to/open-the-assistant.md).
+
+Type anything — `what is AutoLISP?` will do — and press Enter.
 
 You're waiting for two things: that it answers at all, and that it's noticeably
 slower than ChatGPT. Both are normal. This model runs on this machine, for
@@ -28,140 +31,175 @@ free, with no account.
 
 **If nothing happens after 60 seconds:** raise your hand.
 
+**▶ Next: [Step 2 — Run a routine somebody else wrote](#step-2-run-a-routine-somebody-else-wrote)**
+
 ---
 
-## Step 2 - Run a routine somebody else wrote (10 min)
+## Step 2: Run a routine somebody else wrote
 
-Before asking AI for anything, get one working routine into AutoCAD. Then
-you'll know that when something breaks later, it's the *code* that's wrong -
-not you.
+**10 minutes.** This is the most important step on the page.
 
-1. Open AutoCAD 2026 (it's on the taskbar). Start a new blank drawing.
+Before asking AI for anything, get one working routine into AutoCAD. Then when
+something breaks later, you'll know it's the *code* that's wrong — not you.
+
+1. Open AutoCAD 2026 (it's on the taskbar) and start a **new, blank drawing**.
 2. Type `APPLOAD` and press Enter.
-3. Browse to:
-   `C:\LabWork\tracks\1-first-routine\examples\hello-world.lsp`
+3. Browse to `C:\LabWork\tracks\1-first-routine\examples\hello-world.lsp`
 4. Click **Load**, then **Close**.
 5. Type `HELLO` at the command line and press Enter.
 
-You should see a line of text appear. **That's a routine running.** Nothing was
-drawn - that's the point, it can't break anything.
+A line of text appears. **That's a routine running.** Nothing was drawn — which
+is the point, it can't break anything.
 
 Now do the same with `circle-at-point.lsp` in that same folder, and run
 `CIRCLEHERE`. This one asks you to pick a point and draws a circle there.
 
-Open both files in VS Code and read them. You are not expected to understand
-every bracket. Look for the comment lines starting with `;;` - they explain
-what each part does.
+Open both files in VS Code and read them. You are **not** expected to
+understand every bracket. Look for the lines starting with `;;` — those are
+comments, and they explain what each part does.
 
-**Stuck here?** This is the most important step to get right. Raise your hand.
+> Full version of this loop, including what to do when it doesn't work:
+> [Get a routine into AutoCAD](../../how-to/load-a-routine.md).
+
+**Stuck here? Raise your hand.** Don't move on without this working.
+
+**▶ Next: [Step 3 — Ask for your own routine](#step-3-ask-for-your-own-routine)**
 
 ---
 
-## Step 3 - Ask for your own routine (20 min)
+## Step 3: Ask for your own routine
 
-Now the real thing.
+**20 minutes.** Now the real thing.
 
-**First, start it properly.** Open a PowerShell window and run:
+### Your folder is already there
 
-```powershell
-New-Routine my-first
-```
+Open `C:\LabWork\my-work\routine-1\` in the VS Code Explorer. Four files are
+waiting for you — you don't have to create or name anything:
 
-That makes a git branch, creates a set of empty files in
-`C:\LabWork\my-first\`, and commits them. From here on, everything you do is
-recoverable.
+| File | What goes in it |
+| --- | --- |
+| `routine-1-core.lsp` | **This is the one you'll use.** Paste the assistant's code here |
+| `routine-1-util.lsp` | Helper bits, if your routine grows |
+| `routine-1-command.lsp` | The command definition, if you split things up later |
+| `routine-1-loader.lsp` | The front door. This is what you `APPLOAD` |
 
-**Second, ask for the code.** Press `Ctrl+L` in VS Code and paste one of the
-prompts from [`prompts.md`](prompts.md). Start with prompt 1 if you have no
-strong preference - it's the one most likely to work first time.
+For today, `-core.lsp` and `-loader.lsp` are the only two that matter.
 
-**Third, get it into your file.** Copy the code the assistant produced into
-`C:\LabWork\my-first\my-first-core.lsp` (open it in VS Code). Save the file
-with `Ctrl+S`.
+### Ask for the code
 
-**Fourth, load and run it** using the `APPLOAD` loop from step 2 - but load
-`my-first-loader.lsp`, not the core file. The loader is the front door; it
-pulls in everything else.
+Open the assistant and paste one of the prompts from
+[`prompts.md`](prompts.md). **Start with prompt 1** if you have no strong
+preference — it's the one most likely to work first time.
 
-**Fifth, save your progress:**
+### Get it into your file
 
-```powershell
-save "first version of my routine"
-```
+Copy the code the assistant produced into `routine-1-core.lsp`, then
+**File → Save** *(`Ctrl+S`)*.
+
+Saving matters: AutoCAD loads what's on disk, not what's on your screen.
+
+### Load it and run it
+
+`APPLOAD` **`routine-1-loader.lsp`** — the loader, not the core file. The
+loader is the front door; it pulls in everything else.
+
+Then type your command name and press Enter.
+
+> **If the loader asks you to point at `routine-1-util.lsp`**, do it — pick
+> that file in the dialog and it carries on. It only happens once. And if it
+> gets awkward, just `APPLOAD` `routine-1-core.lsp` directly instead; the
+> loader is a convenience, not a requirement.
 
 ### When it doesn't work first time
 
 It often won't. That's not failure, that's the loop:
 
-- Copy the **exact** error text from the AutoCAD command line - all of it, red
-  text included.
-- Paste it into the assistant with one sentence: `I got this error when
-  loading the file:` followed by the error.
-- Apply the fix, `APPLOAD` again.
+1. Copy the **exact** error text from the AutoCAD command line — all of it,
+   red text included.
+2. Paste it into the assistant with one sentence in front:
+   `I got this error when loading the file:`
+3. Apply the fix, `APPLOAD` again.
 
-Two or three rounds of this is completely normal, and it's the single most
-useful habit you'll take home from today.
+Two or three rounds of this is completely normal, and it is the single most
+useful habit you'll take home from today. More on it in
+[When it goes wrong](../../how-to/when-it-goes-wrong.md).
+
+**▶ Next: [Step 4 — Change one thing](#step-4-change-one-thing)**
 
 ---
 
-## Step 4 - Change one thing (20 min)
+## Step 4: Change one thing
+
+**20 minutes.**
 
 A routine you can *change* is worth much more than one you can only run.
 
-Pick **one** small improvement and ask the assistant for it - one change, one
-prompt:
+Pick **one** small improvement and ask for it — one change, one prompt:
 
 - "Ask the user for the radius instead of always using 10."
 - "Put the circle on a layer called `SKETCH`, and create that layer if it
   doesn't exist."
 - "Ask how many circles to draw, then draw that many in a row."
 
-Load it, test it, and then:
+Save the file, `APPLOAD` the loader again, and test it.
 
-```powershell
-save "asks for the radius now"
-```
+### If your change made things worse
 
-**If your change made things worse**, don't retype anything. Run:
+Don't retype anything. VS Code kept the earlier version:
 
-```powershell
-undo
-```
+1. In the **Explorer**, scroll to the bottom and open the **Timeline** section.
+2. Find the entry from before your change and click it to see what's different.
+3. **Right-click it → Restore Contents.**
 
-That takes back the last `save` and leaves your files exactly as they are, so
-you can fix them. Your work is never lost.
+Your file is back exactly as it was. Full instructions:
+[Save your work, and get it back](../../how-to/save-your-work.md).
+
+**Nothing you do today can be lost, and nothing you do today can break the
+machine.** Try the thing you're not sure about.
+
+**▶ Next: [Step 5 — Go again](#step-5-go-again)**
 
 ---
 
-## Step 5 - Go again (whatever time is left)
+## Step 5: Go again
 
-You now know the whole loop. Do it once more on something closer to your actual
-job. Ideas, roughly easiest first:
+**Whatever time is left.**
 
-1. **Block counter** - count blocks of a specific name and report the total.
-   (`examples/count-blocks.lsp` is a working starting point - read it, then ask
+You now know the whole loop. Do it once more on something closer to your
+actual job — this time in `C:\LabWork\my-work\routine-2\`.
+
+Ideas, roughly easiest first:
+
+1. **Block counter** — count blocks of a specific name and report the total.
+   (`examples/count-blocks.lsp` is a working starting point — read it, then ask
    for the change you want.)
-2. **Batch layer creator** - create a standard set of layers with set colours.
-   (`examples/make-layers.lsp` does exactly this - run it, read it, then ask
+2. **Batch layer creator** — create a standard set of layers with set colours.
+   (`examples/make-layers.lsp` does exactly this — run it, read it, then ask
    for your own layer names and colours.)
-3. **Text height fixer** - select all text and multiply its height by 1.5.
-4. **AsBuilt converter** - change layer properties from ToBuild to AsBuilt.
-5. **Quick dimension tool** - place a dimension with a fixed style on a fixed
+3. **Text height fixer** — select all text and multiply its height by 1.5.
+4. **AsBuilt converter** — change layer properties from ToBuild to AsBuilt.
+5. **Quick dimension tool** — place a dimension with a fixed style on a fixed
    layer.
 
-Run `New-Routine <name>` first for each new idea - a fresh branch per routine
-keeps them from tangling.
+There's a `routine-3` folder too if you get that far.
+
+**▶ Next: [Done? Three things](#done-three-things)**
 
 ---
 
 ## Done? Three things
 
-1. Run `save "final version"` one last time.
-2. Have a look at [Track 2](../2-better-results/README.md). It explains why the
-   assistant on this VM produced better AutoLISP than you might have expected -
-   and how to get that same lift at home. It's a five-minute read even if you
-   don't do the exercise.
-3. Want to see where this road leads? `APPLOAD`
+1. **Save one last time.** File → Save.
+2. **Read [Track 2](../2-better-results/README.md).** It explains why the
+   assistant on this VM produced better AutoLISP than you might have expected —
+   and how to get that same lift at home. Five-minute read even if you skip the
+   exercise.
+3. **See where this road leads.** `APPLOAD`
    `C:\LabWork\showcase\roundabout\rdb-loader.lsp` and type `ROUNDABOUT` in a
-   blank drawing. That's a full application built from exactly the patterns
-   you used today.
+   blank drawing — a full application built from exactly the patterns you used
+   today. Both showcases: [Showcases](../../showcase/README.md).
+
+---
+
+← [Start here](../../START-HERE.md) · [Prompts](prompts.md) ·
+[When it goes wrong](../../how-to/when-it-goes-wrong.md)

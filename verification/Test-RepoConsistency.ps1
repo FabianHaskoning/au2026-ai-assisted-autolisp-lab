@@ -68,7 +68,7 @@ foreach ($file in $markdownFiles) {
 Write-Host '  [2/5] Root README folder map'
 $rootReadme = Get-Content -Path (Join-Path $repoRoot 'README.md') -Raw
 $actualFolders = @(Get-ChildItem -Path $repoRoot -Directory |
-    Where-Object { $_.Name -notmatch '^(\.git|\.github|\.claude|node_modules)$' } |
+    Where-Object { $_.Name -notmatch '^(\.git|\.github|\.claude|\.vs|\.vscode|node_modules)$' } |
     ForEach-Object { $_.Name })
 
 foreach ($folder in $actualFolders) {
@@ -128,7 +128,7 @@ foreach ($file in $markdownFiles) {
 
 # --- 5. Every .lsp has balanced parentheses ----------------------------------
 Write-Host '  [5/5] AutoLISP bracket balance'
-foreach ($folder in @('attendee', 'scaffold', 'examples')) {
+foreach ($folder in @('attendee', 'scaffold')) {
     $path = Join-Path $repoRoot $folder
     if (-not (Test-Path $path)) { continue }
     $result = & (Join-Path $PSScriptRoot 'Test-LispBalance.ps1') -Path $path

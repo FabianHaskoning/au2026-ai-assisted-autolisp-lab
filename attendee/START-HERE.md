@@ -1,111 +1,77 @@
-# Start here
+﻿# Start here
 
-> Press **`Ctrl+Shift+V`** in VS Code for the readable version of this page.
+**Nothing needs installing.** AutoCAD 2026, Civil 3D 2026, VS Code and your AI
+assistant are already running on this machine. You can start right now.
 
-Welcome. **Nothing needs installing.** AutoCAD 2026, Civil 3D 2026, VS Code,
-git and your AI assistant are already set up and running on this machine. You
-can start right now.
-
-After the opening talk you have about **75 minutes** of hands-on time. Three
-facilitators are in the room - **raise your hand** the moment you're stuck.
-Don't sit quietly for ten minutes; that's ten minutes of your session.
+You have about **75 minutes** of hands-on time and three facilitators in the
+room. **Raise your hand the moment you're stuck.**
 
 ---
 
-## 1. Pick your track (60 seconds)
+## Pick your track
 
-Answer honestly - the tracks are about where you are today, not how clever you
-are. You can switch later.
+Click the one that describes you. It's about where you are today, not how
+clever you are — and you can switch at any time.
 
-| If this is you | Go to | What you'll leave with |
-| --- | --- | --- |
-| **I have never written a line of AutoLISP**, or never used an AI assistant to write code | [Track 1 - First routine](tracks/1-first-routine/README.md) | Working examples and your first own routine, running in AutoCAD **today**. That's the whole win - celebrate it |
-| **I've tried this before.** I've got AI to produce AutoLISP, but the results are hit-and-miss | [Track 2 - Better results](tracks/2-better-results/README.md) | Measurably better answers - via an instruction file or one boilerplate prompt - and working code that proves it |
-| **I do this regularly** and I want to bring it back to my team | [Track 3 - Teach and scale](tracks/3-teach-and-scale/README.md) | Not code - a better, easier way of working, and what it takes to run a session like this at your own company |
+### ▶ [Track 1 — Your first routine](tracks/1-first-routine/README.md)
 
-Roughly half the room will be on Track 1. If you're torn between two, take the
-lower one and move up when it feels easy.
+**You've never written a line of AutoLISP**, or never used an AI assistant to
+write code. Either one, or both.
+*You'll leave with working code of your own, running in AutoCAD, today.*
+
+### ▶ [Track 2 — Better results](tracks/2-better-results/README.md)
+
+**You've tried this before.** You've got AI to produce AutoLISP, but the
+results are hit-and-miss and you can't tell in advance which you'll get.
+*You'll leave with measurably better answers, and proof of it.*
+
+### ▶ [Track 3 — Teach and scale](tracks/3-teach-and-scale/README.md)
+
+**You do this regularly** and you want to bring it back to your team.
+*You'll leave with a better way of working, not more code.*
+
+About half the room is on Track 1. If you're torn between two, take the lower
+one and move up when it feels easy.
 
 ---
 
-## 2. How you'll work
+## How-to cards
 
-**Your work lives in `C:\LabWork`.** VS Code is already open there. Everything
-you make today goes in that folder.
+Five short pages. Everything in the tracks links back to these, so read them
+when you need them — not now.
 
-**You can just chat.** Press **`Ctrl+L`** and the AI assistant (Continue.dev)
-opens in VS Code. Talk to it in plain language - there are no special commands
-to learn. It runs on this machine: no account, no API key, no cost. It is also
-**slower and smaller than ChatGPT or Claude**, so ask for one small, concrete
-thing at a time rather than a whole finished tool in one go. That trade is
-deliberate: it's the setup you could take back to your own company for free.
-
-**It's not the only assistant here.** This VM also has Claude Code on the same
-local model, desktop apps for ChatGPT and Claude, and an **AI Assistants**
-folder on the desktop linking every major chatbot - if you have your own
-account, you can use it. See
-[`choose-your-assistant.md`](choose-your-assistant.md) for the map, including
-the copy-paste prompt that gives any outside tool the same house rules.
-
-**Getting a routine into AutoCAD** - this is the loop you'll repeat all
-session:
-
-1. In AutoCAD, type `APPLOAD` and press Enter.
-2. Browse to your file in `C:\LabWork\<your-routine>\`.
-3. Select the **loader** file (`<name>-loader.lsp`) and click **Load**.
-4. Click **Close**.
-5. Type your command name at the AutoCAD command line and press Enter.
-
-Changed the file? Just `APPLOAD` it again - it reloads over the top.
-
-**Optional safety net - three commands, in any PowerShell window:**
-
-| Command | What it does |
+| Card | When you need it |
 | --- | --- |
-| `New-Routine <name>` | Starts a new routine: makes a git branch, creates the files, commits |
-| `save "what changed"` | Saves your progress (a git commit) |
-| `undo` | Undoes the last `save`. **Never** loses your file changes |
+| [Open the assistant](how-to/open-the-assistant.md) | Right at the start, and any time the chat panel disappears |
+| [Get a routine into AutoCAD](how-to/load-a-routine.md) | Every single time you want to try your code. The loop of the day |
+| [Save your work, and get it back](how-to/save-your-work.md) | Before every test, and the moment a change made things worse |
+| [Compare two files](how-to/compare-two-files.md) | Track 2 mainly — seeing exactly what changed |
+| [When it goes wrong](how-to/when-it-goes-wrong.md) | Errors, slowness, confidently wrong answers. All normal |
 
-You can do the whole session without these - they're not a prerequisite for
-chatting or for AutoCAD. They exist so nothing you make can ever be lost. Use
-`save` far more often than feels necessary: it costs two seconds and it is the
-reason nothing you do today can go badly wrong.
-
----
-
-## 3. When something goes wrong
-
-Most problems today are one of these:
-
-- **"Unknown command"** - the file didn't load, or you typed the name wrong.
-  Command names are case-insensitive but spelling isn't. Re-run `APPLOAD`.
-- **AutoCAD complains when loading** - almost always unbalanced brackets.
-  Copy the **exact** red error text from the AutoCAD command line and paste it
-  into the assistant. It's usually specific enough to fix in one round.
-- **The assistant is slow** - expected. It's a local model. Shorter prompt,
-  shorter file, one request at a time.
-- **`New-Routine` / `save` / `undo` not recognised** - your PowerShell window
-  was open before setup finished. Close it and open a new one.
-- **Claude Code shows an Anthropic sign-in screen** - it lost its local-model
-  settings. In a new PowerShell window run `local-mode`, then reload VS Code
-  (`Ctrl+Shift+P` → **Developer: Reload Window**). Only applies on VMs that
-  have Claude Code; Continue.dev (`Ctrl+L`) is never affected.
-
-Anything else: **raise your hand.**
+**Your work lives in `C:\LabWork`.** VS Code is already open there, and your
+routine folders (`my-work\routine-1`, `-2`, `-3`) are already waiting for you —
+nothing to create, nothing to name.
 
 ---
 
-## 4. If you only remember one thing
+## Everything else that's here
 
-Each track has its own version of it:
+- [Choose your assistant](choose-your-assistant.md) — this VM has more than one
+  AI on it, and you're welcome to use your own account if you have one.
+- [Boilerplate prompt](boilerplate-prompt.md) — the block to paste into ChatGPT
+  or Claude so it knows the same house rules the assistant here does.
+- [Showcases](showcase/README.md) — two complete applications to look at when
+  you want to see where this leads.
+- [Optional extras](optional/git-if-you-want-it.md) — version control and
+  working with a colleague. **Not needed for anything today.** Only open it if
+  you're curious.
 
-- **Track 1:** you got working code out of an AI and into AutoCAD *today*,
-  with your own hands. That's the whole point - everything else is polish.
-- **Track 2:** one instruction file (or one boilerplate prompt) lifts *every*
-  answer an assistant will ever give you. Write it once, benefit forever.
-- **Track 3:** the code was never the hard part. What you're taking home is a
-  way of working - and everything you need to run this session yourself.
+---
 
-And for everyone: you can now *check* what the AI wrote, *save* it before you
-break it, and *get back* to the last version that worked. That's what turns a
-clever demo into something you can actually use at work on Monday.
+## If you only remember one thing
+
+You can now get working code out of an AI, **check** what it wrote, and
+**get back** to the last version that worked. That's what turns a clever demo
+into something you can use at work on Monday.
+
+**Stuck? Raise your hand.**

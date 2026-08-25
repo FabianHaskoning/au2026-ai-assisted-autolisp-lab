@@ -20,8 +20,8 @@ Work with that constraint rather than against it:
 - **Make one focused request per message**, and get the attendee to test it
   before asking for the next increment. "Draw a circle at the pick point"
   first, then "now ask for a radius" second - not both in one prompt. This
-  also makes each step small enough to `save` as its own commit
-  (`02-git-workflow.md`).
+  also keeps each step small enough that the attendee always has a recent
+  saved version to go back to (`02-saving-your-work.md`).
 - If a conversation has drifted across many unrelated back-and-forths, favor
   starting a fresh chat over continuing to build on an increasingly long
   history - a shorter, focused context produces more reliable code from a

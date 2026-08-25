@@ -26,23 +26,24 @@ tracks, all running in parallel with one facilitator each:
 | [3 — Teach and scale](attendee/tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% |
 
 Attendees install nothing — everything is pre-provisioned, and they start from
-a **START HERE** desktop shortcut. [`examples/`](examples/) sits outside the
-tracks: real worked-example AutoLISP content (cadastral data processing),
-contributed separately.
+a **START HERE** desktop shortcut. The session is deliberately **terminal-free
+and git-free**: work is saved with File → Save, recovered through VS Code's
+Timeline, and compared with **Compare Selected**. Git exists on the VM but is
+confined to [`attendee/optional/`](attendee/optional/), reached only from one
+clearly-labelled line.
 
 ## Folder map
 
 | Folder | Purpose |
 | --- | --- |
-| [`attendee/`](attendee/) | What attendees actually read during the session: `START-HERE.md` and the three parallel tracks. Synced onto the VM by provisioning. |
+| [`attendee/`](attendee/) | What attendees actually read during the session: `START-HERE.md`, the three parallel tracks, the `how-to/` reference cards, the two `showcase/` applications, and the `optional/` git material. Synced onto the VM by provisioning. |
 | [`reference/`](reference/) | The submitted session abstract, and the earlier internal workshop handout it grew out of. |
 | [`verification/`](verification/) | The feedback loop: a VM self-test whose report is pushed back through git, plus the repo-consistency check CI runs. |
 | [`provisioning/`](provisioning/) | PowerShell scripts to check VM hardware/software and provision the environment (Ollama, VS Code, Continue.dev, git, optionally the Claude Code CLI). |
 | [`continue-config/`](continue-config/) | The local-model wiring (Continue.dev + Ollama) and the instruction files the model reads on every prompt. |
 | [`claude-code-config/`](claude-code-config/) | Optional, advanced path: the real Claude Code CLI wired to a local Ollama model — no Anthropic account needed. |
 | [`scaffold/`](scaffold/) | A structural template (no real AutoLISP logic) attendees copy per new routine. |
-| [`git-helpers/`](git-helpers/) | PowerShell module + plain git aliases that make branch-per-routine / commit-often nearly automatic. |
-| [`examples/`](examples/) | Worked-example AutoLISP routines (Eigendomskaart/cadastral data processing), contributed separately. |
+| [`git-helpers/`](git-helpers/) | PowerShell module + plain git aliases. Still installed on the VM, but no longer part of the attendee path — documented for them in `attendee/optional/`. |
 | [`facilitator/`](facilitator/) | Operational guide for the presenter and the two LAB assistants. |
 | [`take-home/`](take-home/) | Running this same setup on an attendee's own PC, during the session or afterward. |
 

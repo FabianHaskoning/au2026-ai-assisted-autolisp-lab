@@ -38,19 +38,23 @@ way, this is a local model, not a cloud one. Work with that:
 - Expect to wait longer per response than you're used to from a cloud
   assistant. That's the real tradeoff of running fully local and free.
 
-## Git workflow
+## Saving work, and staying out of the terminal
 
-Same repo, same habits as the rest of this lab - branch before starting a
-new routine, commit early and often:
+Attendees are AutoCAD users, not developers, and the workshop is deliberately
+terminal-free. Never suggest PowerShell, a shell command or git unless the
+person explicitly asks for one by name.
 
-- `New-Routine -Name <name>` - creates a branch, copies the scaffold
-  template, makes the first commit.
-- `save "<message>"` - commits everything changed.
-- `undo` - safely uncommits the last save without discarding file changes.
-
-These are already available in this shell (installed by provisioning) - use
-them instead of raw git commands, and suggest them proactively if a session
-seems to be going off track.
+- Saving is **File > Save** in VS Code. Remind them to save before every
+  `APPLOAD` - AutoCAD loads what is on disk, not what is on screen.
+- Going back to an earlier version is the VS Code **Timeline**: Explorer panel,
+  scroll to the bottom, open **Timeline**, right-click an entry, **Restore
+  Contents**. Suggest that before suggesting anyone retypes working code.
+- Their work lives in `C:\LabWork\my-work\routine-1\` (and `-2`, `-3`), which
+  already contain correctly named `-loader`, `-core`, `-util` and `-command`
+  files. Nothing needs creating or renaming.
+- Git helper commands (`New-Routine`, `save`, `undo`) do exist on this machine
+  but are not part of the workshop. If asked, answer plainly and point at
+  `C:\LabWork\optional\git-if-you-want-it.md`.
 
 ## File and naming conventions
 

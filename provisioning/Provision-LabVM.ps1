@@ -519,12 +519,30 @@ try {
     if ($effectivePurpose -eq 'Lisp') {
         $workspaceRulesDir = Join-Path $workspaceRoot '.continue\rules'
         New-Item -ItemType Directory -Path $workspaceRulesDir -Force | Out-Null
+        # Copy-Item overwrites but never deletes, so a rule file that was
+        # renamed in the repo (02-git-workflow.md -> 02-saving-your-work.md)
+        # would otherwise survive here and be loaded alongside its replacement.
+        # Only the numbered files we ship are cleared - an attendee's own
+        # 07-*.md from the Track 2 exercise is deliberately left alone.
+        $shippedRuleNames = @(Get-ChildItem -Path (Join-Path $repoRoot 'continue-config\rules') -Filter '*.md' -File | Select-Object -ExpandProperty Name)
+        # -Filter goes to the Win32 API, which understands * and ? but not
+        # character ranges - the numbering test has to be a -match.
+        Get-ChildItem -Path $workspaceRulesDir -Filter '*.md' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '^0[1-6]-' -and $shippedRuleNames -notcontains $_.Name } |
+            ForEach-Object {
+                Remove-Item -Path $_.FullName -Force
+                Write-LabLog "Removed a stale rules file left by an earlier provisioning run: $($_.Name)" -Level Info
+            }
         Copy-Item -Path (Join-Path $repoRoot 'continue-config\rules\*.md') -Destination $workspaceRulesDir -Force
         Write-LabLog "Synced governance rules into $workspaceRulesDir" -Level Success
 
         $scaffoldTemplateDir = Join-Path $workspaceRoot '.scaffold-template'
         New-Item -ItemType Directory -Path $scaffoldTemplateDir -Force | Out-Null
-        Copy-Item -Path (Join-Path $repoRoot 'scaffold\*') -Destination $scaffoldTemplateDir -Recurse -Force
+        # Only the .lsp files: they are all that gets expanded into my-work\.
+        # scaffold\README.md is repo documentation whose relative links point
+        # at folders that don't exist in the workspace.
+        Copy-Item -Path (Join-Path $repoRoot 'scaffold\*.lsp') -Destination $scaffoldTemplateDir -Force
+        Remove-Item -Path (Join-Path $scaffoldTemplateDir 'README.md') -Force -ErrorAction SilentlyContinue
         Write-LabLog "Synced scaffold template into $scaffoldTemplateDir" -Level Success
 
         # The three-track instructions attendees actually read (see
@@ -537,18 +555,95 @@ try {
         Copy-Item -Path (Join-Path $repoRoot 'attendee\START-HERE.md') -Destination (Join-Path $workspaceRoot 'START-HERE.md') -Force
         Copy-Item -Path (Join-Path $repoRoot 'attendee\choose-your-assistant.md') -Destination (Join-Path $workspaceRoot 'choose-your-assistant.md') -Force
         Copy-Item -Path (Join-Path $repoRoot 'attendee\boilerplate-prompt.md') -Destination (Join-Path $workspaceRoot 'boilerplate-prompt.md') -Force
-        $tracksDir = Join-Path $workspaceRoot 'tracks'
-        New-Item -ItemType Directory -Path $tracksDir -Force | Out-Null
-        Copy-Item -Path (Join-Path $repoRoot 'attendee\tracks\*') -Destination $tracksDir -Recurse -Force
-        $showcaseDir = Join-Path $workspaceRoot 'showcase'
-        New-Item -ItemType Directory -Path $showcaseDir -Force | Out-Null
-        Copy-Item -Path (Join-Path $repoRoot 'attendee\showcase\*') -Destination $showcaseDir -Recurse -Force
-        Write-LabLog "Synced attendee instructions into $workspaceRoot (START-HERE.md + assistant pages + tracks\ + showcase\)" -Level Success
-        $installed += 'Attendee instructions (START-HERE.md + assistant pages + tracks + showcase)'
-
-        if (-not (Test-Path (Join-Path $workspaceRoot 'README-git-helpers.md'))) {
-            Copy-Item -Path (Join-Path $repoRoot 'git-helpers\README.md') -Destination (Join-Path $workspaceRoot 'README-git-helpers.md')
+        foreach ($contentFolder in @('tracks', 'showcase', 'how-to', 'optional')) {
+            $targetFolder = Join-Path $workspaceRoot $contentFolder
+            New-Item -ItemType Directory -Path $targetFolder -Force | Out-Null
+            Copy-Item -Path (Join-Path $repoRoot "attendee\$contentFolder\*") -Destination $targetFolder -Recurse -Force
         }
+        Write-LabLog "Synced attendee instructions into $workspaceRoot (START-HERE.md + assistant pages + tracks\ + showcase\ + how-to\ + optional\)" -Level Success
+        $installed += 'Attendee instructions (START-HERE.md + assistant pages + tracks + showcase + how-to + optional)'
+
+        # A git-helpers README in the workspace root put version control in
+        # front of people who never asked for it. The same content now lives in
+        # optional\git-if-you-want-it.md, reached only from the "optional
+        # extras" line on START-HERE.md.
+        $legacyGitReadme = Join-Path $workspaceRoot 'README-git-helpers.md'
+        if (Test-Path $legacyGitReadme) {
+            Remove-Item -Path $legacyGitReadme -Force
+            Write-LabLog 'Removed README-git-helpers.md from the workspace root - it now lives in optional\git-if-you-want-it.md.' -Level Info
+        }
+
+        # --- Ready-made routine folders -------------------------------------
+        # Attendees never run New-Routine, so their folders have to exist
+        # before they arrive: correct filenames, prefix already substituted,
+        # nothing to create or rename. NEVER overwritten - after the session
+        # starts this is the attendee's own work.
+        $myWorkDir = Join-Path $workspaceRoot 'my-work'
+        New-Item -ItemType Directory -Path $myWorkDir -Force | Out-Null
+        $createdRoutineFolders = @()
+        foreach ($routineName in @('routine-1', 'routine-2', 'routine-3')) {
+            $routineDir = Join-Path $myWorkDir $routineName
+            if (Test-Path $routineDir) { continue }
+            New-Item -ItemType Directory -Path $routineDir -Force | Out-Null
+            $upperToken = $routineName.ToUpper()
+            Get-ChildItem -Path $scaffoldTemplateDir -Filter '*.lsp' -File | ForEach-Object {
+                $newFileName = $_.Name -replace '^TEMPLATE-', "$routineName-" -replace '^prefix-', "$routineName-"
+                (Get-Content -Path $_.FullName -Raw) `
+                    -replace 'PLACEHOLDER', $upperToken `
+                    -replace 'prefix', $routineName |
+                    Set-Content -Path (Join-Path $routineDir $newFileName) -Encoding UTF8
+            }
+            $createdRoutineFolders += $routineName
+        }
+
+        # Track 2's exercise compares two files side by side, so both have to
+        # exist for "Compare Selected" to be selectable at all.
+        $rulesExperimentDir = Join-Path $myWorkDir 'rules-experiment'
+        New-Item -ItemType Directory -Path $rulesExperimentDir -Force | Out-Null
+        foreach ($experimentFile in @('baseline.lsp', 'after.lsp')) {
+            $experimentPath = Join-Path $rulesExperimentDir $experimentFile
+            if (-not (Test-Path $experimentPath)) {
+                Set-Content -Path $experimentPath -Encoding UTF8 -Value @(
+                    ';; Track 2 exercise - paste the assistant''s answer here, then File > Save.',
+                    ';; See tracks\2-better-results\exercise.md.'
+                )
+                $createdRoutineFolders += "rules-experiment\$experimentFile"
+            }
+        }
+
+        if ($createdRoutineFolders.Count -gt 0) {
+            Write-LabLog "Created ready-made work folders under $myWorkDir : $($createdRoutineFolders -join ', ')" -Level Success
+            $installed += 'Ready-made routine folders (my-work)'
+        }
+        else {
+            Write-LabLog "Work folders under $myWorkDir already exist - left untouched (they may hold an attendee's work)." -Level Info
+            $skipped += 'Ready-made routine folders (already present)'
+        }
+
+        # --- VS Code workspace settings -------------------------------------
+        # Instruction pages open as a rendered page with clickable links
+        # instead of raw markdown, so nobody has to know Ctrl+Shift+V exists.
+        # Scoped by path: .continue\rules\*.md stays a normal text file,
+        # because Track 2 has attendees edit one.
+        $vscodeDir = Join-Path $workspaceRoot '.vscode'
+        New-Item -ItemType Directory -Path $vscodeDir -Force | Out-Null
+        $workspaceSettings = [ordered]@{
+            'workbench.editorAssociations' = [ordered]@{
+                '**/START-HERE.md'            = 'vscode.markdown.preview.editor'
+                '**/choose-your-assistant.md' = 'vscode.markdown.preview.editor'
+                '**/boilerplate-prompt.md'    = 'vscode.markdown.preview.editor'
+                '**/tracks/**/*.md'           = 'vscode.markdown.preview.editor'
+                '**/how-to/**/*.md'           = 'vscode.markdown.preview.editor'
+                '**/optional/**/*.md'         = 'vscode.markdown.preview.editor'
+                '**/showcase/**/*.md'         = 'vscode.markdown.preview.editor'
+            }
+            'workbench.startupEditor'      = 'none'
+            'explorer.compactFolders'      = $false
+        }
+        $workspaceSettings | ConvertTo-Json -Depth 4 |
+            Set-Content -Path (Join-Path $vscodeDir 'settings.json') -Encoding UTF8
+        Write-LabLog "Wrote $vscodeDir\settings.json - instruction pages open rendered, with clickable links." -Level Success
+        $installed += 'VS Code workspace settings (rendered instructions)'
 
         if ($supportsAgenticCli) {
             Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\CLAUDE.md') -Destination (Join-Path $workspaceRoot 'CLAUDE.md') -Force
@@ -556,8 +651,8 @@ try {
         }
     }
     else {
-        Write-LabLog 'Purpose=General - skipping the AutoLISP-specific workspace bootstrap (.continue/rules, .scaffold-template, README-git-helpers.md, CLAUDE.md). The git workspace itself is still set up for save/undo.' -Level Info
-        $skipped += 'AutoLISP workspace bootstrap (rules/scaffold/README/CLAUDE.md) - Purpose=General'
+        Write-LabLog 'Purpose=General - skipping the AutoLISP-specific workspace bootstrap (.continue/rules, .scaffold-template, my-work, .vscode/settings.json, CLAUDE.md). The git workspace itself is still set up for save/undo.' -Level Info
+        $skipped += 'AutoLISP workspace bootstrap (rules/scaffold/instructions/my-work/CLAUDE.md) - Purpose=General'
     }
 
     if ($gitAvailable) {

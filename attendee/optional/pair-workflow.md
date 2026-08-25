@@ -1,5 +1,10 @@
 # Two people, one routine
 
+> **This is the only page in the workshop that uses git and a terminal.** It's
+> Track 3, Part D, and it's optional — nothing else depends on it. If you'd
+> rather not, you lose nothing. New to git?
+> [Git, if you want it](git-if-you-want-it.md) is the gentler start.
+
 About 25 minutes. The smallest complete git loop that lets two engineers work
 on the same AutoLISP routine without one of them overwriting the other.
 
@@ -240,4 +245,10 @@ git config --global alias.undo 'reset --soft HEAD~1'
 ```
 
 That gives you `git save "message"` and `git undo` on any machine, in any
-terminal - the same two commands you've been using all session.
+terminal, with any AI tool and any git host.
+
+---
+
+← [Git, if you want it](git-if-you-want-it.md) ·
+[Track 3](../tracks/3-teach-and-scale/README.md) ·
+[Start here](../START-HERE.md)

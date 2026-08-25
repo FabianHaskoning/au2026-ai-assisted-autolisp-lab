@@ -5,6 +5,9 @@ desktop.ini
 # VS Code local-only overrides (continue-config/ itself is intentionally tracked)
 .vscode/
 
+# Visual Studio's per-solution cache folder
+.vs/
+
 # AutoCAD lock, autosave, and backup files
 *.dwl
 *.dwl2

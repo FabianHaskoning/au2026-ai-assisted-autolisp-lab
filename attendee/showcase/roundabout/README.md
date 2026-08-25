@@ -61,3 +61,8 @@ order (each layer builds on the previous one):
 Nothing here is off-limits: load it, break it, ask your assistant to explain
 any function in plain language, or to add a feature. It's a showcase, not a
 museum piece.
+
+---
+
+← [Showcases](../README.md) · [Start here](../../START-HERE.md) ·
+[Get a routine into AutoCAD](../../how-to/load-a-routine.md)

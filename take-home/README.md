@@ -37,10 +37,13 @@ git clone https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
 
 Open a **new** terminal after setup finishes:
 
-- `New-Routine test-routine` (or the plain-git aliases from
-  `git-helpers/README.md` on Mac/Linux) - confirms the git workflow.
-- Open VS Code, open the Continue.dev chat panel, send a trivial prompt -
-  confirms the local Ollama model responds.
+- Open VS Code on the workspace and check `my-work\routine-1\` exists with its
+  four `.lsp` files - confirms the workspace bootstrap ran.
+- Open the Continue.dev chat panel and send a trivial prompt - confirms the
+  local Ollama model responds.
+- Optional, if you want the git workflow too: `New-Routine test-routine` (or
+  the plain-git aliases from `git-helpers/README.md` on Mac/Linux). Nothing in
+  the workshop content needs this.
 - If your machine's tier supports it: `claude-local` - confirms the
   optional Claude Code CLI path.
 

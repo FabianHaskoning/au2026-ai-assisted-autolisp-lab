@@ -1,4 +1,4 @@
-# verification
+﻿# verification
 
 How we know the fleet is actually ready, instead of hoping it is.
 
@@ -42,9 +42,9 @@ but something is off; read the reason.
 | 4 | **Model actually generates a response** | The one the manual checklist can't do at fleet scale. Times load and generation separately |
 | 5 | Continue.dev config points at pulled models | The most common single cause of "the assistant is broken" |
 | 6 | Claude Code routed to local Ollama | Otherwise attendees hit an Anthropic sign-in wall |
-| 7 | Helpers wired into **both** PowerShell versions | 5.1 and 7+ share neither module path nor profile |
-| 8 | Workspace complete + desktop shortcut | Every path `START-HERE.md` and the tracks promise, including the assistant pages, per-track examples and the roundabout showcase |
-| 9 | `New-Routine` smoke test | Against a **temp** workspace, so no stray branch is left behind |
+| 7 | Helpers wired into **both** PowerShell versions | WARN-only: 5.1 and 7+ share neither module path nor profile, but the session is terminal-free so no attendee path depends on them |
+| 8 | Workspace complete + desktop shortcut | Every path `START-HERE.md` and the tracks promise: assistant pages, per-track examples, the how-to cards, the optional git page, both showcases, the ready-made `my-work` folders, and the `.vscode` settings that open instructions rendered |
+| 9 | `New-Routine` smoke test | WARN-only, and against a **temp** workspace so no stray branch is left behind. Only `attendee/optional/` mentions this command |
 | 10 | Ollama warm-start configured | Without it the first prompt after a boot costs ~90s - and that is Track 1's opening step |
 | 11 | Example `.lsp` files parse | An example that won't `APPLOAD` wastes 80 people's first ten minutes |
 | 12 | Optional AI assistant apps + shortcuts | WARN-only: ChatGPT/Claude desktop apps and the AI Assistants folder are account-based extras with a documented web fallback |

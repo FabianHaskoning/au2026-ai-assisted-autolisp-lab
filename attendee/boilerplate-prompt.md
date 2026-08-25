@@ -46,7 +46,10 @@ How we work
 ```
 
 That's the whole trick. This is the same content as the rules files in
-`C:\LabWork\.continue\rules\` and `C:\LabWork\CLAUDE.md`, minus the git
-workflow that only exists on this VM - a standing instruction file, delivered
-by hand. Track 2 shows why the file version beats pasting: you write it once
-and every future answer gets the lift.
+`C:\LabWork\.continue\rules\` - a standing instruction file, delivered by
+hand. Track 2 shows why the file version beats pasting: you write it once and
+every future answer gets the lift.
+
+---
+
+← [Start here](START-HERE.md) · [Choose your assistant](choose-your-assistant.md)
