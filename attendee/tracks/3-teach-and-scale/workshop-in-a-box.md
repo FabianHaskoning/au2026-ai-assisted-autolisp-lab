@@ -9,22 +9,39 @@ https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab
 This page is the honest version - what it costs, what breaks, and what to cut
 when you're short on time.
 
+**Start smaller than this repo suggests.** The minimum viable session is:
+each attendee's own browser assistant (ChatGPT, Claude, Copilot's free tier),
+the boilerplate prompt, VS Code and AutoCAD. That's it - no models to pull,
+no assistant config, nothing that can silently break. The local-model stack
+this repo also provisions (Ollama + Continue.dev + Claude Code) is the
+optional, no-per-seat-cost upgrade - and honest experience from this
+session: on hosted lab VMs it proved unreliable while the browser assistants
+just worked. Run your first internal session browser-first; add the local
+stack when you control the hardware.
+
 ---
 
 ## What you actually need
 
 | | Minimum | What this lab uses |
 | --- | --- | --- |
-| **Machine per attendee** | 8 GB RAM, 15 GB free disk | 56 GB RAM, 8-core, 4 GB GPU |
-| **Software** | AutoCAD, VS Code, git, Ollama | Same, plus Civil 3D |
-| **AI** | A local Ollama model - free | `qwen3.5:4b` |
-| **Network** | Only to install. The model runs offline | Full internet |
+| **Machine per attendee** | Anything that runs AutoCAD + a browser | 56 GB RAM, 8-core, 4 GB GPU |
+| **Software** | AutoCAD, VS Code, a browser | Same, plus Civil 3D, git, Ollama |
+| **AI** | Attendees' own browser assistants + the boilerplate prompt | Same, plus a local `qwen3.5:4b` via Ollama |
+| **Network** | Internet, for the browser assistants | Full internet |
 | **People** | 1 facilitator per ~25 attendees | 3 for 60-90 |
 | **Time** | 90 minutes | 90 minutes |
 
-**The whole point is that there is no per-seat AI cost.** The model runs on the
-machine. That's usually what makes this approvable at a company where a
-Copilot licence for every designer isn't.
+**The local-model option exists for one reason: no per-seat AI cost and no
+drawing data leaving the building.** The model runs on the machine. That's
+what makes it approvable at a company where a Copilot licence for every
+designer isn't - and it's what the rest of this page's hardware and model
+advice is about. If your attendees can use their own assistant accounts, you
+can skip all of it.
+
+Want the local pattern on your own PC first? A stripped-down setup - just
+Ollama wired into the Claude Code panel in VS Code, nothing else - lives in
+its own repo: `https://github.com/FabianHaskoning/claude-code-on-ollama`.
 
 ---
 
@@ -150,8 +167,8 @@ instead of on the thing they came for. "I'm not a programmer" is not modesty;
 it's a prediction about whether they'll try.
 
 So the whole session now happens in three places — the VS Code editor, the
-assistant panel, and the AutoCAD command line — and every capability git was
-providing has a click-only equivalent:
+assistant in the browser, and the AutoCAD command line — and every capability
+git was providing has a click-only equivalent:
 
 | Was | Is now |
 | --- | --- |

@@ -351,6 +351,8 @@ Invoke-Check 'Attendee workspace' {
         @{ Path = 'how-to\load-a-routine.md';                          What = 'the APPLOAD how-to card every track links to' }
         @{ Path = 'how-to\save-your-work.md';                          What = 'the save/Timeline how-to card (replaces the git helpers)' }
         @{ Path = 'how-to\compare-two-files.md';                       What = 'the Compare Selected card Track 2 ends on' }
+        @{ Path = 'how-to\open-the-assistant.md';                      What = 'the open-your-assistant card (the browser-first front door)' }
+        @{ Path = 'how-to\get-code-into-a-file.md';                    What = 'the paste-save-.lsp card every assistant answer goes through' }
         @{ Path = 'optional\git-if-you-want-it.md';                    What = 'the optional git page START-HERE links to' }
         @{ Path = 'my-work\routine-1\routine-1-loader.lsp';            What = 'the ready-made routine folder Track 1 step 3 opens' }
         @{ Path = 'my-work\rules-experiment\baseline.lsp';             What = "Track 2's baseline file" }
@@ -365,6 +367,16 @@ Invoke-Check 'Attendee workspace' {
 
     $shortcut = Join-Path (Join-Path $env:PUBLIC 'Desktop') 'START HERE.lnk'
     if (-not (Test-Path $shortcut)) { $missing += 'START HERE desktop shortcut' }
+
+    # Regression guard for the "49 changes" Source Control badge: a workspace
+    # left dirty by a provisioning re-run shows every file as a pending
+    # change to every attendee. Provisioning now commits on every run.
+    if ((Test-Path (Join-Path $workspaceRoot '.git')) -and (Get-Command git -ErrorAction SilentlyContinue)) {
+        $dirty = @(git -C $workspaceRoot status --porcelain 2>$null | Where-Object { $_ })
+        if ($dirty.Count -gt 0) {
+            $missing += "a clean git status ($($dirty.Count) uncommitted changes - the Source Control badge will show them; re-run Provision-LabVM.ps1)"
+        }
+    }
 
     if ($missing.Count -eq 0) {
         Add-Check -Name 'Attendee workspace' -Status PASS -Detail "$workspaceRoot is complete: git repo, $ruleCount rules, scaffold, all three tracks + examples, how-to cards, optional git page, both showcases, ready-made my-work folders, rendered-markdown settings, desktop shortcut." -Data @{ WorkspaceRoot = $workspaceRoot; RuleCount = $ruleCount }

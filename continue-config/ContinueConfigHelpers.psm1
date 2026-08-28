@@ -15,6 +15,16 @@
     env var.
 #>
 
+# Write-Utf8NoBom lives in ClaudeSettingsHelpers.psm1. Provisioning copies
+# that module alongside this file into the installed module folder (see
+# Provision-LabVM.ps1 Steps 9-10), but in the source repo it lives in the
+# sibling claude-code-config/ folder - resolve whichever location has it.
+$claudeSettingsHelpersPath = Join-Path $PSScriptRoot 'ClaudeSettingsHelpers.psm1'
+if (-not (Test-Path $claudeSettingsHelpersPath)) {
+    $claudeSettingsHelpersPath = Join-Path $PSScriptRoot '..\claude-code-config\ClaudeSettingsHelpers.psm1'
+}
+Import-Module $claudeSettingsHelpersPath -Force
+
 function Get-ContinueConfigPath {
     param([string]$Root = $HOME)
     Join-Path $Root '.continue\config.yaml'
@@ -48,7 +58,7 @@ function Set-ContinueConfigBlock {
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
     if (-not (Test-Path $Path)) {
-        Set-Content -Path $Path -Value "${ParentKey}:`n$blockText`n" -Encoding UTF8
+        Write-Utf8NoBom -Path $Path -Content "${ParentKey}:`n$blockText"
         return
     }
 
@@ -59,7 +69,7 @@ function Set-ContinueConfigBlock {
     $existingMatch = [regex]::Match($fileContent, $blockPattern)
     if ($existingMatch.Success) {
         $newContent = $fileContent.Remove($existingMatch.Index, $existingMatch.Length).Insert($existingMatch.Index, $blockText)
-        Set-Content -Path $Path -Value $newContent -Encoding UTF8
+        Write-Utf8NoBom -Path $Path -Content $newContent
         return
     }
 
@@ -68,13 +78,13 @@ function Set-ContinueConfigBlock {
     if ($parentMatch.Success) {
         $insertAt = $parentMatch.Index + $parentMatch.Length
         $newContent = $fileContent.Insert($insertAt, "`n$blockText")
-        Set-Content -Path $Path -Value $newContent -Encoding UTF8
+        Write-Utf8NoBom -Path $Path -Content $newContent
         return
     }
 
     # Parent key isn't present anywhere in the file - append a new one.
     $newContent = $fileContent.TrimEnd() + "`n`n${ParentKey}:`n$blockText`n"
-    Set-Content -Path $Path -Value $newContent -Encoding UTF8
+    Write-Utf8NoBom -Path $Path -Content $newContent
 }
 
 function Set-ContinueConfigModelTag {
@@ -96,7 +106,7 @@ function Set-ContinueConfigModelTag {
     $pattern = '(name: ' + [regex]::Escape($EntryName) + '[\s\S]*?model: )"[^"]*"'
     $updated = $content -replace $pattern, "`$1`"$NewModel`""
     if ($updated -ne $content) {
-        Set-Content -Path $Path -Value $updated -Encoding UTF8
+        Write-Utf8NoBom -Path $Path -Content $updated
     }
 }
 
@@ -111,7 +121,7 @@ function Remove-ContinueConfigBlock {
     $existingMatch = [regex]::Match($fileContent, $blockPattern)
     if ($existingMatch.Success) {
         $newContent = $fileContent.Remove($existingMatch.Index, $existingMatch.Length)
-        Set-Content -Path $Path -Value $newContent -Encoding UTF8
+        Write-Utf8NoBom -Path $Path -Content $newContent
     }
 }
 

@@ -1,15 +1,14 @@
 # Boilerplate prompt for any assistant
 
-The assistants set up on this VM (Continue.dev, Claude Code) read this
-workspace's standing instruction files on every prompt. A chatbot you bring
-yourself - ChatGPT, Claude in the browser, Copilot, Gemini, Le Chat, anything -
-has read none of that.
+**This is step 0 of the day.** A chatbot in the browser - ChatGPT, Claude,
+Copilot, Gemini, Le Chat, anything - knows nothing about AutoCAD 2026,
+`APPLOAD` or this workshop's safety rules until you tell it.
 
-Paste the block below as your **first message** in a new chat, then ask for
-what you want. If your tool supports project instructions or custom
-instructions, paste it there once instead - that's the stronger version of the
-same trick, and exactly what [Track 2](tracks/2-better-results/README.md) is
-about.
+Paste the block below as your **first message in every new chat**, then ask
+for what you want. If your tool supports project instructions or custom
+instructions, paste it there once instead - that's the stronger version of
+the same trick, and exactly what
+[Track 2](tracks/2-better-results/README.md) is about.
 
 ```text
 You are helping me write AutoLISP for AutoCAD 2026 (English) and
@@ -45,10 +44,12 @@ How we work
   load it.
 ```
 
-That's the whole trick. This is the same content as the rules files in
-`C:\LabWork\.continue\rules\` - a standing instruction file, delivered by
-hand. Track 2 shows why the file version beats pasting: you write it once and
-every future answer gets the lift.
+That's the whole trick - a standing instruction set, delivered by hand.
+(The same content also exists as the rules files in
+`C:\LabWork\.continue\rules\`, the form tools at work read automatically -
+Track 2 digs into both.) When the answer comes back, here's how to get it
+into a file without the classic traps:
+[Get the code from the chat into a file](how-to/get-code-into-a-file.md).
 
 ---
 

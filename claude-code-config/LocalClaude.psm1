@@ -76,6 +76,9 @@ function Start-LocalClaude {
     Write-Host "Starting Claude Code with local model: $model (via Ollama, no Anthropic account used)" -ForegroundColor Cyan
 
     $env:ANTHROPIC_AUTH_TOKEN = 'ollama'
+    # Process-scoped on purpose: blanks a real key for THIS session only so
+    # the CLI can't silently bill an Anthropic account while "local". The
+    # key in ~/.claude/settings.json (if any) is never touched here.
     $env:ANTHROPIC_API_KEY = ''
     $env:ANTHROPIC_BASE_URL = 'http://localhost:11434'
 
@@ -110,6 +113,7 @@ function Set-LabModel {
         & ollama pull $model
     }
 
+    Backup-ClaudeSettings -Root $Root
     $claudeSettingsPath = Get-ClaudeSettingsPath -Root $Root
     $settings = Get-JsonFileSettings -Path $claudeSettingsPath
     if ($settings) {
@@ -195,6 +199,7 @@ function Set-LabModelByTag {
         $chosenModel = $pulledModels[$index - 1]
     }
 
+    Backup-ClaudeSettings -Root $Root
     $claudeSettingsPath = Get-ClaudeSettingsPath -Root $Root
     $settings = Get-JsonFileSettings -Path $claudeSettingsPath
     if ($settings) {
@@ -259,6 +264,8 @@ function Enable-LocalClaude {
     #>
     param([string]$Root = $HOME)
 
+    Backup-ClaudeSettings -Root $Root
+
     $claudeSettingsPath = Get-ClaudeSettingsPath -Root $Root
     $settings = Get-JsonFileSettings -Path $claudeSettingsPath
     if ($settings) {
@@ -266,7 +273,9 @@ function Enable-LocalClaude {
             $settings | Add-Member -NotePropertyName 'env' -NotePropertyValue ([PSCustomObject]@{})
         }
         Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_AUTH_TOKEN' -Value 'ollama'
-        Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_API_KEY' -Value ''
+        # IfUnset: never blank out a real API key someone already has in
+        # their settings.json - ANTHROPIC_BASE_URL routes to Ollama anyway.
+        Set-JsonPropertyIfUnset -Object $settings.env -Name 'ANTHROPIC_API_KEY' -Value ''
         Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_BASE_URL' -Value 'http://localhost:11434'
         # Enable-CloudClaude strips the model field, so put a local tag back -
         # without one, Claude Code has no model and self-test check 6 fails.

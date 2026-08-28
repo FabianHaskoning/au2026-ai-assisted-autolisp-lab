@@ -13,6 +13,10 @@ Save before every `APPLOAD`. AutoCAD loads what's on disk, not what's on your
 screen — an unsaved change is the single most common reason a fix "didn't
 work".
 
+Just pasted code from the chat? Two more traps sit on that route — the
+code-fence lines and the `.lsp` ending:
+[Get the code from the chat into a file](get-code-into-a-file.md).
+
 ## Get an earlier version back
 
 VS Code keeps its own history of every file you edit. You don't switch it on

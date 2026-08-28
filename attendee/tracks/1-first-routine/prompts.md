@@ -1,11 +1,10 @@
 # Prompts you can copy and paste
 
-[Open the assistant](../../how-to/open-the-assistant.md), paste one of these
-into the chat box, press Enter.
+[Open the assistant](../../how-to/open-the-assistant.md) — boilerplate pasted
+first — then paste one of these into the chat box and press Enter.
 
-These are written for the assistant on this VM: a **small, local model**. It
-does well with one concrete request at a time and badly with "build me a tool".
-Every prompt below is deliberately narrow for that reason.
+Every assistant does well with one concrete request at a time and badly with
+"build me a tool". Every prompt below is deliberately narrow for that reason.
 
 ## How to read this page
 
@@ -158,7 +157,7 @@ separately with its filename.
 ```
 
 **Why:** short files are easier for you to read, easier for a facilitator to
-help with, and produce better answers from a small model. See
+help with, and produce better answers from any assistant. See
 `.continue/rules/03-file-and-naming-conventions.md` in your workspace.
 
 ---
@@ -186,7 +185,8 @@ then `routine-3\`.
 
 For the ambitious ones: ask for **one function at a time**. "Calculate the area
 of a closed polyline the user picks" is a good prompt. "Build me a room data
-extractor" is not - a small local model will produce something long and wrong.
+extractor" is not - any assistant will produce something long, plausible and
+wrong somewhere you can't see.
 
 ---
 

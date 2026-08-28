@@ -25,16 +25,17 @@ reads on *every* prompt, without you pasting anything. Get that right once and
 every answer improves — including the lazy one-line prompts you'll actually
 type when you're busy.
 
-Every serious assistant has this. Only the filename changes:
+Every serious assistant has this. Only the delivery changes:
 
 | Tool | Where the standing instructions live |
 | --- | --- |
-| Continue.dev (on this VM) | `.continue/rules/*.md` in your workspace |
-| Claude Code | `CLAUDE.md` in the project folder |
-| GitHub Copilot | `.github/copilot-instructions.md` |
+| Any assistant, any chat | Paste [`boilerplate-prompt.md`](../../boilerplate-prompt.md) as your first message — you've been doing this all day |
 | ChatGPT | Project instructions |
 | Claude (claude.ai) | Project instructions |
-| Any tool without instruction-file support | Paste [`boilerplate-prompt.md`](../../boilerplate-prompt.md) as your first message |
+| Gemini | Gems (custom instructions) |
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Claude Code | `CLAUDE.md` in the project folder |
+| Continue.dev | `.continue/rules/*.md` in the workspace |
 
 Same idea, same payoff, everywhere. That's why this is worth an hour.
 
@@ -44,16 +45,18 @@ Same idea, same payoff, everywhere. That's why this is worth an hour.
 
 ## Two ways to get the same lift
 
-Both routes end at the same place; pick by which tool you're using today:
+Both routes end at the same place:
 
-- **Route A — an instruction file.** Continue.dev on this VM reads
-  `.continue/rules/*.md` automatically on every prompt. This is the route the
-  exercise uses.
-- **Route B — the boilerplate prompt**, for a tool you brought your own account
-  to (ChatGPT, Claude in the browser, Copilot, ...). Same content, delivered by
-  hand: paste [`boilerplate-prompt.md`](../../boilerplate-prompt.md) as your
-  first message, or into the tool's project instructions to turn it into
-  Route A.
+- **Route A — the boilerplate prompt.** Paste
+  [`boilerplate-prompt.md`](../../boilerplate-prompt.md) (plus your own
+  additions) as the first message of a chat, or once into your tool's
+  project/custom instructions. **This is the route the exercise uses** — it
+  works in every browser assistant on this VM.
+- **Route B — an instruction file** the tool reads automatically on every
+  prompt: `.continue/rules/*.md`, `CLAUDE.md`,
+  `.github/copilot-instructions.md`. The stronger form, and what you'll use
+  in tools at work — but the tools that read files on this VM may not
+  respond, so today you prove the idea with Route A.
 
 Either way, the target is the same: code that looks like
 [`examples/well-behaved-command.lsp`](examples/well-behaved-command.lsp) —
@@ -67,21 +70,19 @@ standard your rules push every answer toward.
 
 ## You've already been using it
 
-Open `C:\LabWork\.continue\rules\` in the VS Code Explorer. There are six files
-in there and they were loaded into every answer you got today:
+The boilerplate block you've pasted at the start of every chat today **is** a
+standing instruction set — delivered by hand. Open
+[`boilerplate-prompt.md`](../../boilerplate-prompt.md) and look at its four
+sections: Environment, Code conventions, Safety, How we work.
 
-| File | What it makes the assistant do |
-| --- | --- |
-| `01-environment-and-tooling.md` | Assume AutoCAD 2026 English, not some other version |
-| `02-saving-your-work.md` | Work in small testable steps, and point you at File → Save and the Timeline rather than anything complicated |
-| `03-file-and-naming-conventions.md` | Split routines into small files instead of one big one |
-| `04-context-and-token-economy.md` | Keep answers small enough for a local model to get right |
-| `05-autolisp-safety-practices.md` | Add `*error*` handlers and restore system variables by default |
-| `06-prompting-habits.md` | Ask you for the exact error text instead of guessing |
+The file-based form looks the same. Open
+`C:\LabWork\.continue\rules\05-autolisp-safety-practices.md` in the VS Code
+Explorer — 30 lines, one of six rules files a file-reading assistant loads
+automatically.
 
-Read `05-autolisp-safety-practices.md` now — it's 30 lines. Notice that it
-never says "write good code". It says specific, checkable things. **That's the
-difference between an instruction file that works and one that doesn't.**
+Notice that neither ever says "write good code". They say specific, checkable
+things. **That's the difference between standing instructions that work and
+ones that don't.**
 
 **▶ Next: [Now prove it to yourself](#now-prove-it-to-yourself)**
 
@@ -91,7 +92,7 @@ difference between an instruction file that works and one that doesn't.**
 
 Go do **[the exercise](exercise.md)**. About 35 minutes. It ends with the same
 prompt producing two visibly different files, side by side on your screen,
-because of one rule you wrote in between.
+because of the instructions you pasted in between.
 
 Don't skip it and just read. Seeing the difference is the part that convinces
 people — including the colleagues you'll try to explain this to next week.
@@ -120,13 +121,12 @@ changed.
 three times this week that your text height is always 2.5, that's a rule. The
 third correction is the signal.
 
-**Keep them short.** These get sent with every single prompt. On a local model,
-a bloated instruction file makes everything slower *and* worse.
+**Keep them short.** These go along with every single prompt. A bloated
+instruction set gets skimmed, not followed.
 
 ### The other half: keeping context small
 
-Instruction files raise the floor. This raises the ceiling, and it matters more
-here than with a cloud model:
+Standing instructions raise the floor. This raises the ceiling:
 
 - **One request per message.** "Draw a circle at the pick point" first, then
   "now ask for a radius". Not both.
@@ -134,8 +134,9 @@ here than with a cloud model:
   answer, the answer gets worse.
 - **Never paste raw data.** "A polyline with about 40 vertices" beats pasting
   40 coordinate pairs.
-- **Start a fresh chat when a conversation drifts.** The **+** at the top of the
-  panel. A long meandering history makes a small model worse, not better.
+- **Start a fresh chat when a conversation drifts** — and re-paste the
+  boilerplate first. A long meandering history makes any model worse, not
+  better.
 
 **▶ Next: [Take it home](#take-it-home)**
 
@@ -143,13 +144,15 @@ here than with a cloud model:
 
 ## Take it home
 
-The rules in `C:\LabWork\.continue\rules\` are yours. Copy the folder, or copy
-the text into whichever tool your company actually lets you use. Nothing in
-them is specific to this VM except the "local model, be brief" advice in
-`04-context-and-token-economy.md`.
+Paste the boilerplate — plus the rules you wrote in the exercise — into the
+project/custom instructions of whichever tool your company actually lets you
+use. Done once, it lifts every future answer. The file version is there too:
+the rules in `C:\LabWork\.continue\rules\` are yours to copy into a
+`CLAUDE.md` or `copilot-instructions.md` at work.
 
-Want to go further — your own company's standards, and getting colleagues onto
-the same setup? That's [Track 3](../3-teach-and-scale/README.md).
+Want to go further — your own company's standards, and running a session
+like this for your colleagues? That's
+[Track 3](../3-teach-and-scale/README.md).
 
 ---
 

@@ -58,6 +58,11 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\Common.ps1')
 . (Join-Path $PSScriptRoot 'lib\ModelDecision.ps1')
 
+# Shared JSON helpers (BOM-free writes, merge-safe property setters, the
+# pre-lab settings.json backup) - one tested code path with
+# LocalClaude.psm1/LiteLLMGateway.psm1 instead of a private copy here.
+Import-Module (Join-Path $repoRoot 'claude-code-config\ClaudeSettingsHelpers.psm1') -Force
+
 $config = Import-PowerShellDataFile -Path (Join-Path $PSScriptRoot 'config\provisioning.config.psd1')
 
 $installed     = @()
@@ -229,7 +234,7 @@ $env:OLLAMA_KEEP_ALIVE = '-1'
 
 $warmScriptPath = Join-Path $labProgramData 'Warm-OllamaModel.ps1'
 Copy-Item -Path (Join-Path $PSScriptRoot 'Warm-OllamaModel.ps1') -Destination $warmScriptPath -Force
-@{ Model = $chatModel } | ConvertTo-Json | Set-Content -Path (Join-Path $labProgramData 'warm-model.json') -Encoding UTF8
+Write-Utf8NoBom -Path (Join-Path $labProgramData 'warm-model.json') -Content (@{ Model = $chatModel } | ConvertTo-Json)
 
 try {
     # Runs as whoever logs in, hidden, 30s after logon so it doesn't fight
@@ -346,35 +351,20 @@ else {
 # rather than overwriting them (VS Code's settings.json in particular holds
 # real user preferences, not just our config).
 function Set-JsonFileSetting {
+    # Thin wrapper around the shared ClaudeSettingsHelpers functions, kept
+    # for the Write-LabLog warning on an unparseable file.
     param(
         [Parameter(Mandatory)][string]$Path,
         [Parameter(Mandatory)][scriptblock]$Mutate
     )
-    $dir = Split-Path -Parent $Path
-    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    $settings = if (Test-Path $Path) {
-        try { Get-Content -Path $Path -Raw | ConvertFrom-Json }
-        catch {
-            Write-LabLog "Could not parse existing $Path as JSON - leaving it untouched. Add the Claude Code local-model settings there manually (see claude-code-config/README.md)." -Level Warn
-            return $false
-        }
-    }
-    else {
-        [PSCustomObject]@{}
+    $settings = Get-JsonFileSettings -Path $Path
+    if ($null -eq $settings) {
+        Write-LabLog "Could not parse existing $Path as JSON - leaving it untouched. Add the Claude Code local-model settings there manually (see claude-code-config/README.md)." -Level Warn
+        return $false
     }
     & $Mutate $settings
-    $settings | ConvertTo-Json -Depth 10 | Set-Content -Path $Path -Encoding UTF8
+    Save-JsonFileSettings -Path $Path -Settings $settings
     return $true
-}
-
-function Set-JsonProperty {
-    param($Object, [string]$Name, $Value)
-    if ($Object.PSObject.Properties.Name -contains $Name) {
-        $Object.$Name = $Value
-    }
-    else {
-        $Object | Add-Member -NotePropertyName $Name -NotePropertyValue $Value
-    }
 }
 
 if ($supportsAgenticCli) {
@@ -403,6 +393,11 @@ if ($supportsAgenticCli) {
 
     # Always runs, VS Code or not - the standalone CLI needs zero VS Code
     # involvement to reach the local Ollama model.
+    # One-time safety net, mainly for -TakeHome on a personal PC: whatever
+    # settings.json looked like before the lab ever touched it is kept as a
+    # timestamped .bak, restorable with 'restore-claude-settings'.
+    Backup-ClaudeSettings
+
     $claudeSettingsPath = Join-Path $HOME '.claude\settings.json'
     $ok = Set-JsonFileSetting -Path $claudeSettingsPath -Mutate {
         param($settings)
@@ -410,7 +405,9 @@ if ($supportsAgenticCli) {
             $settings | Add-Member -NotePropertyName 'env' -NotePropertyValue ([PSCustomObject]@{})
         }
         Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_AUTH_TOKEN' -Value 'ollama'
-        Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_API_KEY' -Value ''
+        # IfUnset: never blank out a real API key someone already has (a
+        # take-home machine!) - ANTHROPIC_BASE_URL routes to Ollama anyway.
+        Set-JsonPropertyIfUnset -Object $settings.env -Name 'ANTHROPIC_API_KEY' -Value ''
         Set-JsonProperty -Object $settings.env -Name 'ANTHROPIC_BASE_URL' -Value 'http://localhost:11434'
         Set-JsonProperty -Object $settings -Name 'model' -Value $chatModel
     }
@@ -476,7 +473,7 @@ else {
     $renderedConfig = (Get-Content -Path $templatePath -Raw) `
         -replace '\{\{OLLAMA_CHAT_MODEL\}\}', $chatModel `
         -replace '\{\{OLLAMA_AUTOCOMPLETE_MODEL\}\}', $autocompleteModel
-    Set-Content -Path $configOutPath -Value $renderedConfig -Encoding UTF8
+    Write-Utf8NoBom -Path $configOutPath -Content $renderedConfig
     Write-LabLog "Wrote Continue.dev config to $configOutPath (chat: $chatModel, autocomplete: $autocompleteModel)" -Level Success
     $installed += 'Continue.dev config.yaml'
 }
@@ -588,10 +585,10 @@ try {
             $upperToken = $routineName.ToUpper()
             Get-ChildItem -Path $scaffoldTemplateDir -Filter '*.lsp' -File | ForEach-Object {
                 $newFileName = $_.Name -replace '^TEMPLATE-', "$routineName-" -replace '^prefix-', "$routineName-"
-                (Get-Content -Path $_.FullName -Raw) `
+                $renderedLisp = (Get-Content -Path $_.FullName -Raw) `
                     -replace 'PLACEHOLDER', $upperToken `
-                    -replace 'prefix', $routineName |
-                    Set-Content -Path (Join-Path $routineDir $newFileName) -Encoding UTF8
+                    -replace 'prefix', $routineName
+                Write-Utf8NoBom -Path (Join-Path $routineDir $newFileName) -Content $renderedLisp
             }
             $createdRoutineFolders += $routineName
         }
@@ -603,10 +600,10 @@ try {
         foreach ($experimentFile in @('baseline.lsp', 'after.lsp')) {
             $experimentPath = Join-Path $rulesExperimentDir $experimentFile
             if (-not (Test-Path $experimentPath)) {
-                Set-Content -Path $experimentPath -Encoding UTF8 -Value @(
+                Write-Utf8NoBom -Path $experimentPath -Content (@(
                     ';; Track 2 exercise - paste the assistant''s answer here, then File > Save.',
                     ';; See tracks\2-better-results\exercise.md.'
-                )
+                ) -join "`n")
                 $createdRoutineFolders += "rules-experiment\$experimentFile"
             }
         }
@@ -639,9 +636,14 @@ try {
             }
             'workbench.startupEditor'      = 'none'
             'explorer.compactFolders'      = $false
+            # The workshop is deliberately git-free: a "49" on the Source
+            # Control icon and U/M letters on every file read as "you broke
+            # something" to this audience. Git itself stays fully working
+            # for optional\ and the Timeline.
+            'git.countBadge'               = 'off'
+            'git.decorations.enabled'      = $false
         }
-        $workspaceSettings | ConvertTo-Json -Depth 4 |
-            Set-Content -Path (Join-Path $vscodeDir 'settings.json') -Encoding UTF8
+        Write-Utf8NoBom -Path (Join-Path $vscodeDir 'settings.json') -Content ($workspaceSettings | ConvertTo-Json -Depth 4)
         Write-LabLog "Wrote $vscodeDir\settings.json - instruction pages open rendered, with clickable links." -Level Success
         $installed += 'VS Code workspace settings (rendered instructions)'
 
@@ -661,10 +663,17 @@ try {
         # this is an expected, normal outcome here - catch and ignore it, we
         # only care about $LASTEXITCODE.
         try { git log -1 2>&1 | Out-Null } catch { }
-        if ($LASTEXITCODE -ne 0) {
+        $hasCommits = ($LASTEXITCODE -eq 0)
+        # Commit on EVERY run that changed something, not only the first:
+        # a re-provisioned VM that only committed on its first-ever run left
+        # ~49 uncommitted files, which VS Code's Source Control badge then
+        # showed to every attendee.
+        $dirty = @(git status --porcelain 2>$null | Where-Object { $_ })
+        if (-not $hasCommits -or $dirty.Count -gt 0) {
             git add -A | Out-Null
-            git commit -m 'Set up lab workspace' | Out-Null
-            Write-LabLog 'Made the initial workspace commit.' -Level Success
+            $commitMessage = if ($hasCommits) { 'Refresh lab workspace (provisioning re-run)' } else { 'Set up lab workspace' }
+            git commit -m $commitMessage | Out-Null
+            Write-LabLog "Committed the workspace content ('$commitMessage') - the Source Control badge stays clean." -Level Success
         }
     }
 }
@@ -881,6 +890,10 @@ $profileBlockEnd
         New-Item -ItemType File -Path $target.ProfilePath -Force | Out-Null
     }
     $profileContent = Get-Content -Path $target.ProfilePath -Raw -ErrorAction SilentlyContinue
+    # Both branches build the complete new profile text in memory and write
+    # it once through Write-Utf8NoBom - Add-Content (ANSI on 5.1) mixed with
+    # Set-Content -Encoding UTF8 (BOM on 5.1) previously left the same file
+    # with two different encodings depending on which path last touched it.
     if ($profileContent -and $profileContent.Contains($profileBlockStart)) {
         # Re-run: refresh the block in place (model tier facts can change
         # across re-runs, e.g. after a ModelOverride edit) rather than
@@ -890,7 +903,7 @@ $profileBlockEnd
         $existingBlockMatch = [regex]::Match($profileContent, $blockPattern)
         if ($existingBlockMatch.Success) {
             $newContent = $profileContent.Remove($existingBlockMatch.Index, $existingBlockMatch.Length).Insert($existingBlockMatch.Index, $profileBlock)
-            Set-Content -Path $target.ProfilePath -Value $newContent -Encoding UTF8
+            Write-Utf8NoBom -Path $target.ProfilePath -Content $newContent
             $installed += "PowerShell profile block refreshed ($($target.Name))"
         }
         else {
@@ -899,7 +912,8 @@ $profileBlockEnd
         }
     }
     else {
-        Add-Content -Path $target.ProfilePath -Value "`n$profileBlock`n"
+        if ($null -eq $profileContent) { $profileContent = '' }
+        Write-Utf8NoBom -Path $target.ProfilePath -Content ($profileContent.TrimEnd() + "`n`n$profileBlock")
         $installed += "PowerShell profile block ($($target.Name))"
     }
 }

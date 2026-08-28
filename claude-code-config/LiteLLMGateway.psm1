@@ -88,9 +88,7 @@ function Install-LiteLLMGatewayConfig {
         -replace '\{\{LITELLM_MASTER_KEY\}\}', $MasterKey
 
     $configPath = Join-Path $Root '.claude-lab\litellm-config.yaml'
-    $configDir = Split-Path -Parent $configPath
-    if (-not (Test-Path $configDir)) { New-Item -ItemType Directory -Path $configDir -Force | Out-Null }
-    Set-Content -Path $configPath -Value $rendered -Encoding UTF8
+    Write-Utf8NoBom -Path $configPath -Content $rendered
 
     return @{ ConfigPath = $configPath; MasterKey = $MasterKey }
 }

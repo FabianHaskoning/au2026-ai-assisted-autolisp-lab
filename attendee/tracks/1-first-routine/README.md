@@ -19,17 +19,22 @@ About 75 minutes in total. If you're running behind, skip step 5, not step 3.
 
 **5 minutes.**
 
-Open the assistant: in the narrow strip of icons down the far left of VS Code,
-click the **Continue** icon. Full instructions with a picture of where to
-look: [Open the assistant](../../how-to/open-the-assistant.md).
+Open the assistant: on the desktop, open the **AI Assistants** folder and
+double-click one — the ChatGPT, Claude or Gemini you have an account with, or
+**Copilot if you have none** (it needs no login). Full instructions:
+[Open the assistant](../../how-to/open-the-assistant.md).
 
-Type anything — `what is AutoLISP?` will do — and press Enter.
+**First message: paste the block from the
+[boilerplate prompt](../../boilerplate-prompt.md).** That's how the
+assistant learns about AutoCAD 2026 and how this workshop works.
 
-You're waiting for two things: that it answers at all, and that it's noticeably
-slower than ChatGPT. Both are normal. This model runs on this machine, for
-free, with no account.
+Then type anything — `what is AutoLISP?` will do — and press Enter.
 
-**If nothing happens after 60 seconds:** raise your hand.
+You're checking two things: that it answers, and that it acknowledged the
+rules you just pasted.
+
+**Won't sign in, or no answer?** Try a different shortcut in the folder — or
+raise your hand.
 
 **▶ Next: [Step 2 — Run a routine somebody else wrote](#step-2-run-a-routine-somebody-else-wrote)**
 
@@ -87,16 +92,20 @@ For today, `-core.lsp` and `-loader.lsp` are the only two that matter.
 
 ### Ask for the code
 
-Open the assistant and paste one of the prompts from
+In your assistant (boilerplate already pasted), send one of the prompts from
 [`prompts.md`](prompts.md). **Start with prompt 1** if you have no strong
 preference — it's the one most likely to work first time.
 
 ### Get it into your file
 
-Copy the code the assistant produced into `routine-1-core.lsp`, then
+Copy the code the assistant produced into `routine-1-core.lsp` — use the
+**copy button on the code block**, not a hand-selection — then
 **File → Save** *(`Ctrl+S`)*.
 
-Saving matters: AutoCAD loads what's on disk, not what's on your screen.
+Saving matters: AutoCAD loads what's on disk, not what's on your screen. The
+full version, including the two classic traps (pasted ` ``` ` fence lines and
+the unsaved-dot on the tab):
+[Get the code from the chat into a file](../../how-to/get-code-into-a-file.md).
 
 ### Load it and run it
 
@@ -190,9 +199,9 @@ There's a `routine-3` folder too if you get that far.
 ## Done? Three things
 
 1. **Save one last time.** File → Save.
-2. **Read [Track 2](../2-better-results/README.md).** It explains why the
-   assistant on this VM produced better AutoLISP than you might have expected —
-   and how to get that same lift at home. Five-minute read even if you skip the
+2. **Read [Track 2](../2-better-results/README.md).** It explains why that
+   boilerplate block you pasted at step 1 made the answers better — and how to
+   make the same lift permanent at work. Five-minute read even if you skip the
    exercise.
 3. **See where this road leads.** `APPLOAD`
    `C:\LabWork\showcase\roundabout\rdb-loader.lsp` and type `ROUNDABOUT` in a

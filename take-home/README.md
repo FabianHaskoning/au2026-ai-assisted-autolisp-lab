@@ -4,6 +4,12 @@ Everything from the session, on your own machine - during the session if
 you brought a laptop, or any time afterward. Nothing here needs the
 Skillable lab VM.
 
+> **Only want the local-model + Claude Code part?** There's a stripped-down
+> standalone version - one setup script that wires Ollama into the Claude
+> Code panel in VS Code on any Windows PC, nothing else:
+> <https://github.com/FabianHaskoning/claude-code-on-ollama>. This page is
+> the full workshop setup instead.
+
 ## 1. Get the repo
 
 ```powershell
@@ -32,6 +38,17 @@ git clone https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
 - **Mac/Linux**: no automated script - follow
   [`mac-linux-setup.md`](mac-linux-setup.md) (a handful of commands, same
   end result for the VS Code + Continue.dev workflow).
+
+## Your existing Claude settings are safe
+
+If your machine already had a `~/.claude/settings.json` (say, with a real
+`ANTHROPIC_API_KEY` in it), the setup backs it up **before touching it** to
+a timestamped file next to it: `settings.json.pre-lab-<date>.bak`. Only the
+first run makes a backup, so re-runs can never overwrite the pristine copy.
+The setup also never blanks an existing non-empty `ANTHROPIC_API_KEY` — it
+only adds what's missing. To put everything back exactly as it was, run
+`restore-claude-settings` in a new shell (or copy the `.bak` over
+`settings.json` yourself).
 
 ## 3. Smoke test
 

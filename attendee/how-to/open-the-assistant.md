@@ -1,43 +1,63 @@
 # How to open the assistant
 
-The AI assistant lives inside VS Code, in a panel next to your files.
+Your AI assistant runs in the browser — the same ChatGPT, Claude, Copilot or
+Gemini you may already use at home. This machine has them one click away.
 
 ## Open it
 
-1. Look at the **narrow strip of icons down the far left edge** of the VS Code
-   window — the same strip that has the file explorer at the top.
-2. Click the **Continue** icon. Hover over the icons and their names appear;
-   you're looking for the one called *Continue*.
-3. A chat panel opens on the side.
+1. On the **desktop**, open the folder called **AI Assistants**.
+2. Double-click the assistant you want. Edge opens on its chat page.
+3. Sign in with your own account — or, if you don't have one, pick
+   **Copilot**, which works without signing in.
+4. **First message of every new chat: paste the
+   [boilerplate prompt](../boilerplate-prompt.md).** It tells the assistant
+   how this workshop works, and it's the difference between usable answers
+   and generic ones.
 
-*Keyboard shortcut, if you prefer: `Ctrl+L`.*
+**No account and Copilot won't cooperate either?** Raise your hand. Don't
+spend five minutes hunting.
 
-**Nothing there? No Continue icon at all?** Raise your hand. Don't spend five
-minutes hunting.
+## Arrange your screen
+
+Put the browser on one half of the screen and VS Code on the other
+*(drag the windows, or `Win+←` / `Win+→`)*. The whole day is a loop between
+the two — chat on one side, your file on the other.
 
 ## Use it
 
-Type in the box at the bottom of the panel and press Enter. Plain language,
-no special commands. Ask it anything — `what is AutoLISP?` is a fine first
-question.
+Plain language, no special commands. Ask it anything — `what is AutoLISP?`
+is a fine first question. Ask for **one small, concrete thing at a time**,
+not a whole finished tool — that's what keeps answers usable, whichever
+assistant you picked.
 
-**It will be slower than ChatGPT.** That's not broken. This model runs on
-this machine, for free, with no account and no data leaving the room. The
-trade is that it's smaller and slower — so ask for **one small, concrete
-thing at a time**, not a whole finished tool.
+When an answer contains code, get it into your file the safe way:
+[Get the code from the chat into a file](get-code-into-a-file.md).
 
 ## Start a fresh conversation
 
-Click the **+** at the top of the Continue panel.
+Click **New chat** — every assistant has the button, usually top-left with a
+**+**. Do this whenever you change subject, **and paste the boilerplate again
+as the first message**. A long conversation about something else makes the
+answers worse, not better.
 
-Do this whenever you change subject. A long conversation about something else
-makes a small model worse, not better — it's the single most common reason
-people get a disappointing answer.
+**Closed the tab by accident?** Reopen it from the desktop folder and
+re-paste the boilerplate. Nothing else is lost — your code lives in your
+files, not in the chat.
 
-## Not the only option
+## The assistant inside VS Code — mostly ignore it
 
-If you have your own ChatGPT, Claude or Copilot account, you're welcome to use
-it — see [Choose your assistant](../choose-your-assistant.md).
+VS Code's far-left icon strip also has an installed assistant called
+**Continue**. On these lab VMs it often doesn't respond, so the tracks don't
+use it — the browser is the way. Two things worth knowing anyway:
+
+- Its icon is **not the play-button-with-a-bug icon** — that one is *Run and
+  Debug*, a different thing entirely. Hover over the icons and their names
+  appear.
+- If you click it and the panel sits silent for a minute, that's this VM,
+  not you. Go back to the browser.
+
+Curious what else is on this machine? See
+[Choose your assistant](../choose-your-assistant.md).
 
 ---
 

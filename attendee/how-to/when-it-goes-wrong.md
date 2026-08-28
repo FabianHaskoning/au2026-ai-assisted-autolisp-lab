@@ -36,18 +36,22 @@ take home today.
 Look at the command-line area at the bottom of the AutoCAD window. A lot of
 routines only print a line of text there. That still counts as working.
 
-## The assistant is slow
+## The assistant is slow, or the answers get worse
 
-Expected. It's a small model running on this machine, with no account and no
-cost. Make it easier on itself:
+Long chats and big requests do that to every assistant. Make it easier on
+itself:
 
 - One request per message. Not "draw a circle and ask for a radius and put it
   on a layer" — one of those, then the next.
 - Short files. If it has to read 300 lines to answer, the answer gets worse.
 - Never paste raw data. "A polyline with about 40 vertices" beats 40 pairs of
   coordinates.
-- Start a fresh chat when the conversation drifts — the **+** at the top of the
-  panel.
+- Start a fresh chat when the conversation drifts — **New chat**, then paste
+  the [boilerplate](../boilerplate-prompt.md) again first.
+
+**Not answering at all?** If it's a browser assistant, check the tab is still
+signed in — or open a different assistant from the desktop folder and carry
+on there. Your code is in your files, not in the chat.
 
 ## The answer is confidently wrong
 

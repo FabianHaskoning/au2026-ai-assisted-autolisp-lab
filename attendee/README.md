@@ -16,8 +16,8 @@ facilitator each.
 | Track | Audience | Expected share | Outcome |
 | --- | --- | --- | --- |
 | [`1-first-routine/`](tracks/1-first-routine/) | Never written AutoLISP, or never used AI to write code | ~50% | Working examples plus a first own routine, running in AutoCAD |
-| [`2-better-results/`](tracks/2-better-results/) | Has tried it; results are inconsistent | ~35% | Measurably better answers (instruction file or boilerplate prompt), proven with a side-by-side compare |
-| [`3-teach-and-scale/`](tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% | Not code: a better way of working, and a plan to run this session internally |
+| [`2-better-results/`](tracks/2-better-results/) | Has tried it; results are inconsistent | ~35% | Measurably better answers (the boilerplate as a standing instruction set), proven with a side-by-side compare |
+| [`3-teach-and-scale/`](tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% | Not code: a plan to run this session yourself, plus shared standards |
 
 Each track is written to fill about 75 minutes with a step that can be dropped
 if the room runs late. Track 1 is the one that must not overrun.
@@ -26,7 +26,7 @@ if the room runs late. Track 1 is the one that must not overrun.
 
 | Folder | What it's for |
 | --- | --- |
-| [`how-to/`](how-to/) | Five short reference cards — open the assistant, load a routine, save and recover, compare two files, when it goes wrong. The tracks link to these instead of repeating them, so each click path is written down exactly once. |
+| [`how-to/`](how-to/) | Six short reference cards — open the assistant, get code into a file, load a routine, save and recover, compare two files, when it goes wrong. The tracks link to these instead of repeating them, so each click path is written down exactly once. |
 | [`showcase/`](showcase/) | Two complete applications. `roundabout/` runs on the VM; `cadastral-map/` is real production code that deliberately can't. |
 | [`optional/`](optional/) | Git, and only git. Nothing in Tracks 1 and 2 links here; Track 3 Part D does, labelled optional. |
 
@@ -36,9 +36,13 @@ if the room runs late. Track 1 is the one that must not overrun.
   every instruction runnable as written on the VM. No repo-internal jargon.
 - **No terminal, no PowerShell, no git in Tracks 1 and 2.** Attendees are
   AutoCAD users; both consistently read as intimidating. Everything happens in
-  three places: the VS Code editor, the assistant panel, and the AutoCAD
-  command line. Git lives in `optional/` and is reachable from exactly two
-  places — one line on `START-HERE.md` and Track 3 Part D.
+  three places: the VS Code editor, the assistant in the browser, and the
+  AutoCAD command line. Git lives in `optional/` and is reachable from exactly
+  two places — one line on `START-HERE.md` and Track 3 Part D.
+- **The browser assistant + boilerplate is the primary path.** Installed
+  assistants (Continue.dev, Claude Code, the Ollama app) proved unreliable on
+  the hosted lab VMs — mention them only as optional/take-home, never as a
+  step a track depends on.
 - **Click paths first, shortcuts second.** Never write a keyboard shortcut as
   the only instruction. Write what to click and where it is, then put the
   shortcut in parentheses after it. Nobody can verify a shortcut on the VM

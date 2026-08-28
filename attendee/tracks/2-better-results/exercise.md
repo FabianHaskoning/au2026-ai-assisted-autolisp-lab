@@ -1,14 +1,14 @@
 # Exercise - before and after, side by side
 
-About 35 minutes. You'll run the **same vague prompt twice**, with one rule
-file added in between, and then look at the two answers side by side with
-every difference highlighted.
+About 35 minutes. You'll run the **same vague prompt twice** — once bare,
+once with standing instructions pasted first — and then look at the two
+answers side by side with every difference highlighted.
 
 The vagueness is the point. Anyone can get good code from a carefully written
 prompt. The question is what you get on a Tuesday afternoon when you type the
 first thing that comes into your head.
 
-**Parts:** [1 Baseline](#part-1-the-baseline) · [2 Write a rule](#part-2-write-your-own-rule) ·
+**Parts:** [1 Baseline](#part-1-the-baseline) · [2 Write your own rules](#part-2-write-your-own-rules) ·
 [3 Same prompt again](#part-3-the-same-prompt-again) · [4 Look at the difference](#part-4-look-at-the-difference)
 
 ---
@@ -24,8 +24,9 @@ files are waiting: `baseline.lsp` and `after.lsp`. Nothing to create.
 
 **8 minutes.**
 
-**Start a brand-new chat.** Click the **+** at the top of the Continue panel
-first — a leftover conversation would contaminate the comparison.
+**Start a brand-new chat** in your browser assistant — and, just this once,
+**don't paste the boilerplate**. The bare chat *is* the experiment: this is
+what everyone who never heard of standing instructions gets.
 
 Paste this exactly. Don't improve it:
 
@@ -43,64 +44,43 @@ Copy whatever comes back into `baseline.lsp`, then **File → Save**
 - Does it restore any system variable it changed?
 - Which AutoCAD version did it assume?
 - Did it ask you anything, or just guess?
+- Did it give you a complete file, or a fragment to "paste at the command
+  line"?
 
-Some of these will already be handled — that's the six existing rule files
-working. Note which ones aren't. For what "all of them handled" looks like,
-skim [`examples/well-behaved-command.lsp`](examples/well-behaved-command.lsp).
+Note the gaps — they're what Part 2 fixes. For what "all of them handled"
+looks like, skim
+[`examples/well-behaved-command.lsp`](examples/well-behaved-command.lsp).
 
-> Using your own ChatGPT/Claude/Copilot account instead? The experiment works
-> there too: run the vague prompt in a fresh chat for the baseline, then add
-> [`boilerplate-prompt.md`](../../boilerplate-prompt.md) (plus your own rules)
-> to the project instructions and run it again.
-
-**▶ Next: [Part 2 — Write your own rule](#part-2-write-your-own-rule)**
+**▶ Next: [Part 2 — Write your own rules](#part-2-write-your-own-rules)**
 
 ---
 
-## Part 2: Write your own rule
+## Part 2: Write your own rules
 
 **10 minutes.**
 
-Create a new file in `C:\LabWork\.continue\rules\` called
-`07-my-standards.md`. In the VS Code Explorer: right-click the `rules` folder →
-**New File…** → type the name.
+You're going to extend the boilerplate with **two or three rules of your
+own**. Open [`boilerplate-prompt.md`](../../boilerplate-prompt.md), copy its
+prompt block somewhere handy (a scratch file, or straight into the chat box
+of a new chat — don't send yet), and type your rules underneath, like:
 
-Use this shape. The block at the top matters — `alwaysApply: true` is what
-makes it load on every prompt:
-
-```markdown
----
-name: my-standards
-description: My own conventions for AutoLISP routines
-alwaysApply: true
----
-
-# My standards
-
-- <your rule>
-- <your rule>
-- <your rule>
+```text
+My standards
+- Layer names always start with PRJ- and are upper case.
+- Default text height is 2.5 unless the user says otherwise.
+- Any routine that moves or modifies existing entities must report how
+  many it will affect and ask for confirmation before doing it.
 ```
 
-Now fill in **two or three real rules**. Use your actual company conventions if
-you have them — this file is more useful to you if it's true. Otherwise pick
-from the gaps you noticed in Part 1:
+Use your actual company conventions if you have them — this list is more
+useful to you if it's true. Otherwise pick from the gaps you noticed in
+Part 1. More ideas:
 
-- "Layer names always start with `PRJ-` and are upper case."
-- "Default text height is 2.5 unless the user says otherwise."
-- "Any routine that moves or modifies existing entities must report how many it
-  will affect and ask for confirmation before doing it."
 - "Write code comments in Dutch. Chat replies in English."
 - "Never use `(command ...)` for layer creation - use `entmake` or the layer
   table."
 
 Keep each one **specific and checkable**. "Write clean code" will do nothing.
-
-Save the file.
-
-> Continue.dev picks the file up on the next prompt. If it clearly hasn't,
-> reload the window: **View → Command Palette…** → type `reload` → pick
-> **Developer: Reload Window**.
 
 **▶ Next: [Part 3 — The same prompt again](#part-3-the-same-prompt-again)**
 
@@ -110,10 +90,11 @@ Save the file.
 
 **8 minutes.**
 
-**Start another new chat** — the **+** icon again. This matters: reusing the
-old chat means the model just copies its previous answer.
+**Start another new chat.** This matters: reusing the old chat means the
+model just copies its previous answer.
 
-Paste the **exact same prompt**:
+Send the **boilerplate + your rules** as the first message. Then paste the
+**exact same prompt**:
 
 ```text
 Write me an AutoLISP routine that moves selected objects to a different layer.
@@ -133,14 +114,15 @@ Copy the result into `after.lsp`, then **File → Save**.
 2. Hold **Ctrl** and click `after.lsp`. Both are highlighted now.
 3. **Right-click** either one → **Compare Selected**.
 
-Two panes open with every difference coloured in. Green is what the rule added,
-red is what it replaced. Full instructions:
+Two panes open with every difference coloured in. Green is what your
+instructions added, red is what they replaced. Full instructions:
 [Compare two files](../../how-to/compare-two-files.md).
 
 **What to look for:**
 
 - Did your rules actually show up in the code?
-- Did anything you *didn't* ask for improve as well?
+- Did anything you *didn't* ask for improve as well? (That's the boilerplate's
+  Safety section working.)
 - Did anything get worse or longer without being better?
 - How close is `after.lsp` to
   [`examples/well-behaved-command.lsp`](examples/well-behaved-command.lsp)?
@@ -154,21 +136,31 @@ always it's one of:
 - **The rule was too vague.** "Follow our standards" → make it name the thing.
 - **The rule described a style, not an action.** "Be careful with layers" →
   "check the layer exists with `tblsearch` before using it".
-- **The file isn't being read.** Check the block at the top is exactly right,
-  especially `alwaysApply: true`, and reload the window.
+- **The instructions never reached the chat.** Did you actually send the
+  boilerplate + rules as the first message of the *new* chat?
 - **You reused the old chat.** Genuinely the most common cause. Start a fresh
   one.
 
-Sharpen one rule and run Part 3 again. Two iterations of this teaches you more
-about instruction files than any amount of reading.
+Sharpen one rule and run Part 3 again. Two iterations of this teaches you
+more about standing instructions than any amount of reading.
+
+### The file version — for tools at work
+
+Tools like Copilot, Claude Code and Continue.dev read standing instructions
+from a *file* automatically, so nobody has to remember to paste anything —
+that's the stronger form you'll set up at work
+(`.github/copilot-instructions.md`, `CLAUDE.md`, `.continue/rules/*.md`; see
+the table in [Track 2](README.md)). This VM has example rules files in
+`C:\LabWork\.continue\rules\` worth copying — but the file-reading tools
+here may not respond, which is why today's proof ran through the chat box.
 
 ---
 
 ## Done
 
-Keep `07-my-standards.md`. It's the most portable thing you're taking home
-today: paste it into Copilot's custom instructions or a ChatGPT project and it
-works there too.
+Keep your rules block. It's the most portable thing you're taking home today:
+paste it — with the boilerplate — into a ChatGPT project, Claude project
+instructions or Copilot's custom instructions and it works there too.
 
 Back to [Track 2](README.md), or on to
 [Track 3 — Teach and scale](../3-teach-and-scale/README.md).

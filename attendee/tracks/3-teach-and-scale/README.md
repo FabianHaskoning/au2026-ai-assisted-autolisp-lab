@@ -3,19 +3,21 @@
 **For:** you already use AI to write AutoLISP and it mostly works. Your problem
 isn't getting a routine out of a model — it's everything around that.
 
-**You'll leave with:** not code, and that's deliberate. This track is about
-doing all of this easier, nicer and better: a way of working a team can share,
-and a concrete plan for running a session like this inside your own
-organisation. If you write barely a line of AutoLISP in the next 75 minutes,
-the track worked.
+**You'll leave with:** a plan to **run this session yourself**, inside your own
+organisation. That's deliberate, and it's less ambitious than it sounds —
+everything here is public and free to reuse, and the session is built so that
+non-programmers succeed in it. Walking a room of Track-1-level colleagues
+through their first working routine unlocks more than any tool you could hand
+them. If you write barely a line of AutoLISP in the next 75 minutes, the track
+worked.
 
-**Parts:** [A Encode your standards](#part-a-encode-your-standards-once) ·
-[B Read the drawing](#part-b-read-the-drawing-instead-of-drawing) ·
-[C Run this session yourself](#part-c-run-this-session-yourself) ·
+**Parts:** [A Run this session yourself](#part-a-run-this-session-yourself) ·
+[B Encode your standards](#part-b-encode-your-standards-once) ·
+[C Read the drawing](#part-c-read-the-drawing-instead-of-drawing) ·
 [D Two people, one routine](#part-d-two-people-one-routine-optional)
 
-About 75 minutes. **Pick two.** All four won't fit, and the rest is a good read
-on the plane home.
+About 75 minutes. **Do Part A; pick one more** if time allows. The rest is a
+good read on the plane home.
 
 ---
 
@@ -24,49 +26,80 @@ on the plane home.
 The hard part of AI-assisted AutoLISP at scale isn't the AI. Three things break
 first, and none of them are model problems:
 
-1. **Everyone re-learns the same lessons.** Each person independently
+1. **The person who set it up becomes the bottleneck.** That's you, and it
+   doesn't scale past about five colleagues. The people who'd benefit most —
+   the ones who'd never call themselves programmers — never get started at
+   all, because nobody shows them how in terms they trust.
+2. **Everyone re-learns the same lessons.** Each person independently
    discovers that you need an `*error*` handler, that the model assumes the
    wrong AutoCAD version, that pasting 200 lines makes it worse.
-2. **Nobody can review anyone else's routine.** Code arrives by email, in
+3. **Nobody can review anyone else's routine.** Code arrives by email, in
    chat, on a shared drive as `tool_v3_final_FIXED.lsp`. No history, no way to
    see what changed.
-3. **The person who set it up becomes the bottleneck.** That's you, and it
-   doesn't scale past about five colleagues.
 
-Shared instruction files fix the first. Some form of version control fixes the
-second. A repeatable session fixes the third. One part below for each.
+A repeatable session you can run yourself fixes the first — that's Part A,
+and it's the track. Shared instruction files fix the second. Some form of
+version control fixes the third.
 
 ---
 
-## Part A: Encode your standards, once
+## Part A: Run this session yourself
 
-**20 minutes.** Start here — it's the one with the highest payoff per minute.
+**25 minutes.** Start here — this is the track.
+
+Read [`workshop-in-a-box.md`](workshop-in-a-box.md): what today actually
+takes — and how little of it is essential. The minimum viable version is
+browsers, a boilerplate prompt, VS Code and AutoCAD; the rest (hardware
+tiers, local models, provisioning scripts, timing, facilitator count, the
+failure modes that eat a session) is covered for when you want it.
+Everything in it is in this repo already and free to reuse.
+
+While you read, sketch your own version: which six colleagues, which
+afternoon, which of the three tracks you'd offer (just Track 1 is a fine
+first run), and what you'd cut. Leaving with that sketch written down is the
+win condition for today.
+
+It's not that hard. You watched three facilitators do it today — half of what
+they did was walking around saying "raise your hand the moment you're stuck".
+
+**▶ Next: [Part B — Encode your standards, once](#part-b-encode-your-standards-once)**
+
+---
+
+## Part B: Encode your standards, once
+
+**20 minutes.** The highest payoff per minute — and the first thing your own
+session needs: your organisation's rules, not this workshop's.
 
 Track 2's exercise is worth doing even from here, but at this level the point
 is different: you're not writing rules for yourself, you're writing them for
 the twelve people who'll use them after you.
 
-1. Read the six files in `C:\LabWork\.continue\rules\`. Note that each one is
-   short, single-concern, and says checkable things.
-2. Write one real rule file for **your** organisation — your layer naming, your
-   text heights, your title-block conventions, your review requirements. Put it
-   in `.continue/rules/07-<yourcompany>.md`.
-3. Think about where it would actually live at work: alongside the routines, so
-   it's versioned and reviewable like everything else — not in someone's
+1. Read the boilerplate block in
+   [`boilerplate-prompt.md`](../../boilerplate-prompt.md) and the six files
+   in `C:\LabWork\.continue\rules\`. Note that each is short, single-concern,
+   and says checkable things.
+2. Write one real rules block for **your** organisation — your layer naming,
+   your text heights, your title-block conventions, your review requirements.
+   Draft it in a file under `C:\LabWork\my-work\`, or straight under a pasted
+   boilerplate in a chat.
+3. Think about where it would actually live at work: alongside the routines,
+   so it's versioned and reviewable like everything else — not in someone's
    OneDrive.
 
-The format is portable. The same text works as `CLAUDE.md`, as
-`.github/copilot-instructions.md`, or pasted into a ChatGPT project. Pick the
-tool your IT department already approved; the content doesn't change.
+The format is portable. The same text works pasted under the boilerplate, as
+`CLAUDE.md`, as `.github/copilot-instructions.md`, or in a ChatGPT project.
+Pick the tool your IT department already approved; the content doesn't
+change.
 
 **The rule of thumb worth taking home:** the third time you correct the
 assistant about the same thing, stop correcting and write it down.
 
-**▶ Next: [Part B — Read the drawing instead of drawing](#part-b-read-the-drawing-instead-of-drawing)**
+**▶ Next: [Part C — Read the drawing instead of drawing](#part-c-read-the-drawing-instead-of-drawing)**
 
 ---
 
-## Part B: Read the drawing instead of drawing
+## Part C: Read the drawing instead of drawing
 
 **15 minutes.** The one technical idea worth taking from this track: the next
 maturity level of AutoLISP tooling isn't drawing more — it's routines that
@@ -86,22 +119,6 @@ production tool, contributed by the engineer who uses it: a web request, a data
 format AutoLISP can't parse, and a dependency on somebody else's plugin. You
 can't run it here — that's the point. It's the most honest thing in the
 workshop about what this looks like at work.
-
-**▶ Next: [Part C — Run this session yourself](#part-c-run-this-session-yourself)**
-
----
-
-## Part C: Run this session yourself
-
-**15 minute read.** [`workshop-in-a-box.md`](workshop-in-a-box.md)
-
-What it actually takes: hardware, which model for which machine, the
-provisioning script, timing, how many facilitators, and the failure modes that
-eat your session if you don't plan for them. Everything in it is in this repo
-already and free to reuse.
-
-This is the one part that assumes you're comfortable running a setup script.
-Everything else in the workshop deliberately doesn't.
 
 **▶ Next: [Part D — Two people, one routine](#part-d-two-people-one-routine-optional)**
 

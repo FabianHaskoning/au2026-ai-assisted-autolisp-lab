@@ -69,10 +69,12 @@ function New-Routine {
         Get-ChildItem -Path $scaffoldTemplate -Filter '*.lsp' -File | ForEach-Object {
             $newFileName = $_.Name -replace '^TEMPLATE-', "$safeName-" -replace '^prefix-', "$safeName-"
             $newPath = Join-Path $targetDir $newFileName
-            (Get-Content -Path $_.FullName -Raw) `
+            $rendered = (Get-Content -Path $_.FullName -Raw) `
                 -replace 'PLACEHOLDER', $upperToken `
-                -replace 'prefix', $safeName |
-                Set-Content -Path $newPath -Encoding UTF8
+                -replace 'prefix', $safeName
+            # No BOM: Set-Content -Encoding UTF8 adds one on PS 5.1, and a
+            # BOM can trip up APPLOAD.
+            [System.IO.File]::WriteAllText($newPath, $rendered, [System.Text.UTF8Encoding]::new($false))
         }
 
         git add -A | Out-Null

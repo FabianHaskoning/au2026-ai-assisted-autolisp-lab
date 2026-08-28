@@ -26,7 +26,11 @@ tracks, all running in parallel with one facilitator each:
 | [3 — Teach and scale](attendee/tracks/3-teach-and-scale/) | Does this regularly; wants to spread it | ~15% |
 
 Attendees install nothing — everything is pre-provisioned, and they start from
-a **START HERE** desktop shortcut. The session is deliberately **terminal-free
+a **START HERE** desktop shortcut. The assistant is **browser-first**: each
+attendee opens their own ChatGPT/Claude/Copilot/Gemini from the desktop's
+**AI Assistants** folder and pastes the boilerplate prompt; the locally
+installed stack (Ollama, Continue.dev, Claude Code) stays provisioned but is
+optional/take-home material. The session is deliberately **terminal-free
 and git-free**: work is saved with File → Save, recovered through VS Code's
 Timeline, and compared with **Compare Selected**. Git exists on the VM but is
 confined to [`attendee/optional/`](attendee/optional/), reached only from one
