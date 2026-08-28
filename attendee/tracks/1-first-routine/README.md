@@ -21,8 +21,8 @@ About 75 minutes in total. If you're running behind, skip step 5, not step 3.
 
 Open the assistant: on the desktop, open the **AI Assistants** folder and
 double-click one — the ChatGPT, Claude or Gemini you have an account with, or
-**Copilot if you have none** (it needs no login). Full instructions:
-[Open the assistant](../../how-to/open-the-assistant.md).
+**Copilot or Duck.ai if you have none** (they need no login). Full
+instructions: [Open the assistant](../../how-to/open-the-assistant.md).
 
 **First message: paste the block from the
 [boilerplate prompt](../../boilerplate-prompt.md).** That's how the

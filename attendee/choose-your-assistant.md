@@ -12,21 +12,25 @@ file, `APPLOAD` it in AutoCAD, iterate on the exact error text.
 On the **desktop**, open the **AI Assistants** folder. Each shortcut opens
 its assistant in Microsoft Edge:
 
-| Assistant | Where it goes |
-| --- | --- |
-| ChatGPT | chatgpt.com |
-| Claude | claude.ai |
-| Microsoft Copilot | copilot.microsoft.com |
-| Gemini | gemini.google.com |
-| Le Chat (Mistral) | chat.mistral.ai |
-| Kimi | kimi.com |
-| Lumo (Proton) | lumo.proton.me |
-| DeepSeek | chat.deepseek.com |
-| Perplexity | perplexity.ai |
-| Qwen Chat | chat.qwen.ai |
+| Assistant | Where it goes | Account needed? |
+| --- | --- | --- |
+| ChatGPT | chatgpt.com | No for basic chat |
+| Claude | claude.ai | Free account |
+| Microsoft Copilot | copilot.microsoft.com | No |
+| Gemini | gemini.google.com | Free account |
+| Le Chat (Mistral) | chat.mistral.ai | Free account |
+| Kimi | kimi.com | Free account |
+| Lumo (Proton) | lumo.proton.me | No for basic chat |
+| DeepSeek | chat.deepseek.com | Free account |
+| Perplexity | perplexity.ai | No for basic search |
+| Qwen Chat | chat.qwen.ai | Free account |
+| Grok | grok.com | Free account |
+| Meta AI | meta.ai | No for basic chat |
+| Duck.ai (DuckDuckGo) | duck.ai | No |
 
-Sign in with your own account, or use one with a free tier — **Copilot works
-without signing in at all**.
+Sign in with your own account where the last column says so — **Copilot and
+Duck.ai need no sign-in at all**, and a few others allow basic, capped use
+without an account.
 
 Then, before anything else: **paste the block from
 [`boilerplate-prompt.md`](boilerplate-prompt.md) as your first message.** A
@@ -45,18 +49,36 @@ approved.
 - **You have an account with any of them?** Use that one. Your quota, your
   familiar tool — the tracks don't care which chat window the code comes
   from.
-- **No account with anything?** Use **Copilot** — free tier, no login needed
-  for basic chat.
+- **No account with anything?** Use **Copilot** or **Duck.ai** — both work
+  with no sign-in at all.
 - Whichever you pick: ask for **one small, concrete thing at a time**, not a
   whole finished tool, and start a **new chat** (boilerplate first) whenever
   you change subject.
+
+And a rough, moves-fast guide to the differences — a starting point, not
+gospel:
+
+- **Capability:** ChatGPT, Claude, Gemini and Grok are the current top tier,
+  with DeepSeek, Qwen, Kimi, Le Chat and Copilot close behind — for today's
+  exercises, every assistant in the folder writes usable AutoLISP. Duck.ai
+  and Lumo run smaller models: fine today, weaker on long or subtle work.
+- **Price:** every free tier here is enough for this workshop. Expect caps
+  (messages per hour/day) and a switch to a lighter model when it's busy;
+  paid plans (mostly around $20/month) buy bigger limits and stronger models.
+- **Privacy:** the shared-machine caution above is the one that matters
+  today. Beyond that: assume chats may be used for training unless you opt
+  out or pay; Duck.ai (anonymised, no training) and Lumo (Proton, European,
+  no logs) are the privacy-minded picks; DeepSeek, Kimi and Qwen are hosted
+  in China — fine for generic AutoLISP questions, not for company data.
 
 ## 3. Also installed on this VM — mostly ignore it
 
 VS Code also carries installed assistants — **Continue** (a panel backed by
 a model running on this machine) and on the larger VMs **Claude Code** — and
 the Start menu has an **Ollama** chat app and desktop **ChatGPT**/**Claude**
-apps. On these lab VMs they often don't respond, so no track uses them.
+apps. We installed and tested all of it while building this lab; on these
+hosted VMs it doesn't respond reliably, so no track uses it — the whole
+session runs in the browser instead.
 
 If you want to try one anyway, do it *after* finishing a track, not instead
 of one — and know the traps: the Continue icon in VS Code's far-left strip

@@ -10,9 +10,10 @@ small, fast model and a bigger, slower one; `cloud-mode`/`local-mode`
 switch between this local setup and a real Anthropic account, for anyone
 who has or wants one.
 
-**This is optional, advanced content.** The main 90-minute exercise uses
-Continue.dev inside VS Code. This local Claude Code setup is here for
-attendees who want to go further, and especially for anyone who wants to
+**This is optional, advanced content.** The main 90-minute exercise runs in
+a browser assistant (the desktop's **AI Assistants** folder - see
+`C:\LabWork\choose-your-assistant.md`). This local Claude Code setup is here
+for attendees who want to go further, and especially for anyone who wants to
 take the exact same pattern - a real coding CLI, a local free model, no
 API cost - back to their own company afterward.
 

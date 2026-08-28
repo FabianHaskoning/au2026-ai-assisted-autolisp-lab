@@ -12,9 +12,9 @@ room. **Raise your hand the moment you're stuck.**
 ## Before you pick a track — two clicks
 
 1. On the desktop, open the **AI Assistants** folder and double-click the
-   assistant you want — ChatGPT, Claude, Gemini, or **Copilot if you have no
-   account** (it needs none). Full click path:
-   [Open the assistant](how-to/open-the-assistant.md).
+   assistant you want — ChatGPT, Claude, Gemini, Grok, or any of the others.
+   **No account with any of them? Copilot and Duck.ai need none.** Full click
+   path: [Open the assistant](how-to/open-the-assistant.md).
 2. Paste the block from the **[Boilerplate prompt](boilerplate-prompt.md)**
    as your first message. That's how the assistant learns what AutoCAD 2026
    and `APPLOAD` are — do it again at the start of every new chat.

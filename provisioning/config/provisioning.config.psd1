@@ -41,5 +41,8 @@
         @{ Name = 'DeepSeek';          Url = 'https://chat.deepseek.com' }
         @{ Name = 'Perplexity';        Url = 'https://perplexity.ai' }
         @{ Name = 'Qwen Chat';         Url = 'https://chat.qwen.ai' }
+        @{ Name = 'Grok';              Url = 'https://grok.com' }
+        @{ Name = 'Meta AI';           Url = 'https://meta.ai' }
+        @{ Name = 'Duck.ai';           Url = 'https://duck.ai' }
     )
 }

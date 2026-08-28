@@ -8,13 +8,13 @@ Gemini you may already use at home. This machine has them one click away.
 1. On the **desktop**, open the folder called **AI Assistants**.
 2. Double-click the assistant you want. Edge opens on its chat page.
 3. Sign in with your own account — or, if you don't have one, pick
-   **Copilot**, which works without signing in.
+   **Copilot** or **Duck.ai**; both work without signing in.
 4. **First message of every new chat: paste the
    [boilerplate prompt](../boilerplate-prompt.md).** It tells the assistant
    how this workshop works, and it's the difference between usable answers
    and generic ones.
 
-**No account and Copilot won't cooperate either?** Raise your hand. Don't
+**No account and neither Copilot nor Duck.ai will cooperate?** Raise your hand. Don't
 spend five minutes hunting.
 
 ## Arrange your screen
@@ -47,8 +47,9 @@ files, not in the chat.
 ## The assistant inside VS Code — mostly ignore it
 
 VS Code's far-left icon strip also has an installed assistant called
-**Continue**. On these lab VMs it often doesn't respond, so the tracks don't
-use it — the browser is the way. Two things worth knowing anyway:
+**Continue**. We tested it while building this lab: on these hosted VMs it
+often doesn't respond, so the tracks don't use it — the browser is the way.
+Two things worth knowing anyway:
 
 - Its icon is **not the play-button-with-a-bug icon** — that one is *Run and
   Debug*, a different thing entirely. Hover over the icons and their names

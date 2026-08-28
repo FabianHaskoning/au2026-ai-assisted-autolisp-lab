@@ -28,9 +28,11 @@ tracks, all running in parallel with one facilitator each:
 Attendees install nothing — everything is pre-provisioned, and they start from
 a **START HERE** desktop shortcut. The assistant is **browser-first**: each
 attendee opens their own ChatGPT/Claude/Copilot/Gemini from the desktop's
-**AI Assistants** folder and pastes the boilerplate prompt; the locally
-installed stack (Ollama, Continue.dev, Claude Code) stays provisioned but is
-optional/take-home material. The session is deliberately **terminal-free
+**AI Assistants** folder and pastes the boilerplate prompt. Browser-first is
+a tested conclusion, not a preference — the locally installed stack (Ollama,
+Continue.dev, Claude Code) was provisioned and exercised on the hosted lab
+VMs, where it did not respond reliably while the browser assistants just
+worked; it stays installed as optional/take-home material. The session is deliberately **terminal-free
 and git-free**: work is saved with File → Save, recovered through VS Code's
 Timeline, and compared with **Compare Selected**. Git exists on the VM but is
 confined to [`attendee/optional/`](attendee/optional/), reached only from one

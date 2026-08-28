@@ -85,6 +85,15 @@ never given as the only instruction - every step names what to click. If an
 attendee asks about version control, `attendee/optional/git-if-you-want-it.md`
 is the answer; the helpers are still installed and still work.
 
+**And browser-first, for a tested reason.** The local stack (Continue.dev,
+Claude Code, Ollama) is installed on every VM and was exercised there while
+building this session: on the hosted lab VMs it did not respond reliably, and
+the browser assistants just worked. So every track runs in the browser, and no
+attendee step depends on the installed stack - it stays on the image as
+take-home material. `attendee/choose-your-assistant.md` section 3 is the
+attendee-facing version of this paragraph. If you see someone typing into the
+Continue panel, move them to the browser rather than debugging the panel.
+
 Self-selection is deliberately loose. Moving someone mid-session costs nothing:
 no track depends on having done another one.
 
