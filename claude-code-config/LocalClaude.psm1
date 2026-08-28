@@ -296,15 +296,15 @@ function Enable-LocalClaude {
     Write-Host "Switched back to the local Ollama model - no account needed." -ForegroundColor Green
 }
 
-function Set-LabModel-Fast { Set-LabModel -Tier Fast }
-function Set-LabModel-Quality { Set-LabModel -Tier Quality }
+function Set-LabModelFast { Set-LabModel -Tier Fast }
+function Set-LabModelQuality { Set-LabModel -Tier Quality }
 
 Set-Alias -Name claude-local -Value Start-LocalClaude
-Set-Alias -Name fast-model -Value Set-LabModel-Fast
-Set-Alias -Name quality-model -Value Set-LabModel-Quality
+Set-Alias -Name fast-model -Value Set-LabModelFast
+Set-Alias -Name quality-model -Value Set-LabModelQuality
 Set-Alias -Name switch-model -Value Set-LabModelByTag
 Set-Alias -Name cloud-mode -Value Enable-CloudClaude
 Set-Alias -Name local-mode -Value Enable-LocalClaude
 
-Export-ModuleMember -Function Start-LocalClaude, Set-LabModel, Set-LabModelByTag, Get-PulledOllamaModelTags, Enable-CloudClaude, Enable-LocalClaude, Set-LabModel-Fast, Set-LabModel-Quality `
+Export-ModuleMember -Function Start-LocalClaude, Set-LabModel, Set-LabModelByTag, Get-PulledOllamaModelTags, Enable-CloudClaude, Enable-LocalClaude, Set-LabModelFast, Set-LabModelQuality `
     -Alias claude-local, fast-model, quality-model, switch-model, cloud-mode, local-mode

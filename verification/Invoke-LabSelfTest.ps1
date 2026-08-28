@@ -326,6 +326,58 @@ Invoke-Check 'Helper commands in both shells' {
     }
 }
 
+# --- 7b. Provisioned modules import cleanly in BOTH PowerShell versions -------
+# Catches the class of bug where a module folder misses a nested dependency
+# (ContinueProviders needs ClaudeSettingsHelpers.psm1 for Write-Utf8NoBom) or
+# an exported name trips PowerShell's import-time name check - either one
+# prints a banner in every terminal anyone opens on this VM. WARN rather than
+# FAIL for the same reason as check 7: the session is terminal-free, so it
+# never blocks a handover, but a facilitator must know. Each import runs in a
+# child -NoProfile shell of the matching PowerShell version, so 5.1 is
+# genuinely exercised rather than assumed.
+Invoke-Check 'Provisioned modules import cleanly' {
+    $targets = @(
+        @{ Name = 'Windows PowerShell 5.1'; Exe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'; Modules = Join-Path $HOME 'Documents\WindowsPowerShell\Modules' }
+        @{ Name = 'PowerShell 7+';          Exe = 'pwsh';                                                                     Modules = Join-Path $HOME 'Documents\PowerShell\Modules' }
+    )
+    $moduleNames = @('LabGitHelpers', 'ContinueProviders', 'LocalClaude', 'LiteLLMGateway')
+    # A missing nested dependency surfaces as a NON-terminating error from
+    # the inner Import-Module - the outer import still "succeeds" (which is
+    # why a VM terminal shows the banner yet keeps working). So the child
+    # inspects $Error rather than trusting the exit of -ErrorAction Stop.
+    $childScript = '$Error.Clear(); $labImportWarnings = $null; try { Import-Module $env:LAB_SELFTEST_MODULE -WarningVariable labImportWarnings -ErrorAction SilentlyContinue 3>$null 2>$null } catch { "ERROR: $($_.Exception.Message)"; exit 1 }; if ($Error.Count -gt 0) { foreach ($e in $Error) { "ERROR: $e" }; exit 1 }; if ($labImportWarnings) { foreach ($w in $labImportWarnings) { "WARNING: $w" }; exit 2 }; exit 0'
+    $problems = @()
+    $tested = 0
+    try {
+        foreach ($target in $targets) {
+            if (-not (Get-Command $target.Exe -ErrorAction SilentlyContinue)) { $problems += "$($target.Name): '$($target.Exe)' not found"; continue }
+            foreach ($moduleName in $moduleNames) {
+                $moduleDir = Join-Path $target.Modules $moduleName
+                # Absent is fine here: which modules SHOULD exist is check 7's
+                # job, and LocalClaude/LiteLLMGateway are tier/take-home
+                # optional. Present-but-broken is what this check is for.
+                if (-not (Test-Path $moduleDir)) { continue }
+                $env:LAB_SELFTEST_MODULE = $moduleDir
+                $output = & $target.Exe -NoProfile -NonInteractive -Command $childScript 2>&1
+                $tested++
+                if ($LASTEXITCODE -ne 0) { $problems += "$($target.Name): $moduleName - $(($output | Out-String).Trim())" }
+            }
+        }
+    }
+    finally {
+        Remove-Item Env:\LAB_SELFTEST_MODULE -ErrorAction SilentlyContinue
+    }
+    if ($tested -eq 0 -and $problems.Count -eq 0) {
+        Add-Check -Name 'Provisioned modules import cleanly' -Status WARN -Detail 'No provisioned lab modules found to import - has Provision-LabVM.ps1 run on this machine?'
+    }
+    elseif ($problems.Count -eq 0) {
+        Add-Check -Name 'Provisioned modules import cleanly' -Status PASS -Detail "$tested module import(s) completed with no errors and no warnings across both PowerShell versions." -Data @{ Imports = $tested }
+    }
+    else {
+        Add-Check -Name 'Provisioned modules import cleanly' -Status WARN -Detail "$($problems -join '; '). Every new terminal on this VM shows this as a banner. Fix the module source, re-run Provision-LabVM.ps1, and reopen terminals." -Data @{ Problems = $problems }
+    }
+}
+
 # --- 8. The attendee workspace has everything the instructions promise --------
 Invoke-Check 'Attendee workspace' {
     $config = Import-PowerShellDataFile -Path (Join-Path $repoRoot 'provisioning\config\provisioning.config.psd1')

@@ -832,6 +832,11 @@ foreach ($target in $shellTargets) {
     New-Item -ItemType Directory -Path $continueProvidersModuleDir -Force | Out-Null
     Copy-Item -Path (Join-Path $repoRoot 'continue-config\ContinueProviders.psm1') -Destination $continueProvidersModuleDir -Force
     Copy-Item -Path (Join-Path $repoRoot 'continue-config\ContinueConfigHelpers.psm1') -Destination $continueProvidersModuleDir -Force
+    # ContinueConfigHelpers.psm1 imports Write-Utf8NoBom from
+    # ClaudeSettingsHelpers.psm1 at load time - without this copy, every new
+    # terminal errors on the profile's Import-Module ContinueProviders and
+    # continue-provider cannot write config.yaml.
+    Copy-Item -Path (Join-Path $repoRoot 'claude-code-config\ClaudeSettingsHelpers.psm1') -Destination $continueProvidersModuleDir -Force
     $installed += "ContinueProviders module - continue-provider ($($target.Name))"
 
     # LAB_AGENT_MODEL_FAST/_QUALITY are static facts about this VM's tier
