@@ -2,7 +2,7 @@
 Thumbs.db
 desktop.ini
 
-# VS Code local-only overrides (continue-config/ itself is intentionally tracked)
+# VS Code local-only overrides
 .vscode/
 
 # Visual Studio's per-solution cache folder
@@ -13,11 +13,3 @@ desktop.ini
 *.dwl2
 *.bak
 *.sv$
-
-# PowerShell provisioning logs / diagnostics output
-provisioning/logs/
-provisioning/diagnostics/
-
-# Self-test output. The report is published to the vm-reports branch by
-# verification/Publish-LabReport.ps1, never committed on a source branch.
-verification/out/

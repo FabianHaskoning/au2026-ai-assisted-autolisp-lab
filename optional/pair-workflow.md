@@ -58,7 +58,7 @@ cd C:\LabFork
 git checkout -b add-my-rules
 ```
 
-Add a rules file at `continue-config/rules/07-<yourcompany>.md` - your real
+Add a rules file at `my-rules/07-<yourcompany>.md` - your real
 layer naming or text-height conventions from Track 3 Part B.
 
 ```powershell
@@ -111,7 +111,7 @@ git checkout -b conflict-demo-<your-name>
 ```
 
 **Both** edit the same line of the same file - the first bullet in
-`continue-config/rules/06-prompting-habits.md` will do. Write something
+`boilerplate-prompt.md` will do. Write something
 different. Both commit and push, both open a PR.
 
 The first PR merges normally. The second says **"This branch has conflicts"**.

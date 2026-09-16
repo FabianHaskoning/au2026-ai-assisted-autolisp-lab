@@ -1,9 +1,12 @@
 ﻿# Running this session yourself
 
-Everything you need is in the public repo, free to reuse:
+Everything you need is in the public repo, free to reuse. This branch holds the
+attendee material; the setup half - provisioning, verification, the assistant
+configuration - is on the `facilitator` branch, and every path named below is
+relative to that branch:
 
 ```text
-https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab
+https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab/tree/facilitator
 ```
 
 This page is the honest version - what it costs, what breaks, and what to cut

@@ -1,26 +1,21 @@
 {
-  // Repo-level markdown rules, so CI (.github/workflows/validate.yml) and a
-  // facilitator running `markdownlint-cli2 "**/*.md"` locally agree. Without
-  // this, CI would fall back to library defaults and fail on rules we don't
-  // apply.
+  // Branch-level markdown rules, so CI (.github/workflows/validate.yml) and
+  // anyone running `markdownlint-cli2 "**/*.md"` locally agree. Without this,
+  // CI would fall back to library defaults and fail on rules we don't apply.
   "config": {
     "default": true,
 
-    // Prose wraps where it reads best. The attendee instructions in
-    // particular are written in short paragraphs, not to a column limit.
+    // Prose wraps where it reads best. These instructions are written in
+    // short paragraphs, not to a column limit.
     "MD013": false
 
     // MD040 (fenced-code-language) stays ON deliberately: these documents are
-    // full of blocks an attendee is meant to copy, and the language tag is
-    // what tells them whether they're looking at PowerShell, AutoLISP or
-    // console output.
+    // full of blocks you are meant to copy, and the language tag is what
+    // tells you whether you're looking at PowerShell, AutoLISP or console
+    // output.
   },
 
   "ignores": [
-    "node_modules",
-    // Generated self-test output. Git-ignored, and published to the
-    // vm-reports branch rather than committed here - it is a machine
-    // artefact, not a document we author.
-    "verification/out"
+    "node_modules"
   ]
 }
