@@ -13,7 +13,7 @@ Skillable lab VM.
 ## 1. Get the repo
 
 ```powershell
-git clone https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
+git clone -b facilitator https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
 ```
 
 ## 2. Set it up

@@ -22,10 +22,12 @@ the profile page).
 
 This repo is public at
 `https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab` - clone
-it directly onto the VM, no credentials needed:
+it directly onto the VM, no credentials needed. **The setup lives on the
+`facilitator` branch**; `master` holds only the attendee content people
+reach by scanning the QR code:
 
 ```powershell
-git clone https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
+git clone -b facilitator https://github.com/FabianHaskoning/au2026-ai-assisted-autolisp-lab.git
 ```
 
 ## Pre-session validation

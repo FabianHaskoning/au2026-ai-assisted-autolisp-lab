@@ -11,6 +11,17 @@ gets cloned onto the real Skillable VM (author access confirmed) and run
 from there — see [`facilitator/README.md`](facilitator/README.md) for the
 operational checklist.
 
+## Two branches
+
+| Branch | What is on it |
+| --- | --- |
+| `master` | Only what attendees see during the session: `START-HERE.md`, the three tracks, the how-to cards, the showcases and the optional git pages, flattened to the repo root in the same layout they had on the VM. That is what a QR-code scan lands on. |
+| `facilitator` (this branch) | The whole lab: the same attendee content under `attendee/`, plus provisioning, verification, the assistant configs, the deck and the facilitator guide. Edit attendee content here and copy it to `master`. |
+
+To publish attendee changes made here, check them out onto `master` at the
+root: `git checkout facilitator -- attendee` on `master`, then move the files
+up a level.
+
 The repo holds both halves of the session: the **environment** (governance
 instructions for the local model, an idempotent provisioning script, hardware
 diagnostics, a structural template, facilitator docs) and the **content**
